@@ -1,0 +1,36 @@
+{
+  "name": "@jmazzahacks/auth-api-client",
+  "version": "1.0.0",
+  "description": "JavaScript/TypeScript client for multi-tenant authentication service",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build",
+    "watch": "tsc --watch"
+  },
+  "keywords": [
+    "auth",
+    "authentication",
+    "multi-tenant",
+    "api-client"
+  ],
+  "author": "Jason Byteforge <jason@mzmail.me>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jmazzahacks/auth-api-javascript.git"
+  },
+  "files": [
+    "dist/**/*",
+    "README.md",
+    "LICENSE"
+  ],
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
