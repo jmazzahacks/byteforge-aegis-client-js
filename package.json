@@ -1,7 +1,7 @@
 {
-  "name": "@jmazzahacks/auth-api-client",
+  "name": "byteforge-aegis-client-js",
   "version": "1.0.0",
-  "description": "JavaScript/TypeScript client for multi-tenant authentication service",
+  "description": "JavaScript/TypeScript client for ByteForge Aegis multi-tenant authentication service",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
@@ -10,6 +10,8 @@
     "watch": "tsc --watch"
   },
   "keywords": [
+    "byteforge",
+    "aegis",
     "auth",
     "authentication",
     "multi-tenant",
@@ -19,7 +21,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/jmazzahacks/auth-api-javascript.git"
+    "url": "https://github.com/jmazzahacks/byteforge-aegis-client-js.git"
   },
   "files": [
     "dist/**/*",

@@ -1,25 +1,25 @@
-# Multi-Tenant Authentication API Client
+# ByteForge Aegis Client - JavaScript/TypeScript
 
-JavaScript/TypeScript client library for the multi-tenant authentication service.
+JavaScript/TypeScript client library for ByteForge Aegis multi-tenant authentication service.
 
 ## Installation
 
 Install directly from GitHub:
 
 ```bash
-npm install github:jmazzahacks/auth-api-javascript
+npm install github:jmazzahacks/byteforge-aegis-client-js
 ```
 
 Or with yarn:
 
 ```bash
-yarn add github:jmazzahacks/auth-api-javascript
+yarn add github:jmazzahacks/byteforge-aegis-client-js
 ```
 
 ## Quick Start
 
 ```typescript
-import { AuthClient } from '@jmazzahacks/auth-api-client';
+import { AuthClient } from 'byteforge-aegis-client-js';
 
 // Initialize the client
 const auth = new AuthClient({
@@ -234,7 +234,7 @@ auth.clearAuthToken();
 
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { AuthClient } from '@jmazzahacks/auth-api-client';
+import { AuthClient } from 'byteforge-aegis-client-js';
 
 export default function VerifyEmailPage() {
   const searchParams = useSearchParams();
@@ -279,7 +279,7 @@ export default function VerifyEmailPage() {
 This package is written in TypeScript and includes full type definitions. All types are exported:
 
 ```typescript
-import type { User, Site, AuthToken, LoginResponse } from '@jmazzahacks/auth-api-client';
+import type { User, Site, AuthToken, LoginResponse } from 'byteforge-aegis-client-js';
 ```
 
 ## Error Handling
