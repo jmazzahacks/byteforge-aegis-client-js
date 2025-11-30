@@ -112,7 +112,7 @@ export class AuthClient {
    * Check if the backend API is healthy
    */
   async healthCheck(): Promise<ApiResponse<{ status: string }>> {
-    return this.request<{ status: string }>('/health', {
+    return this.request<{ status: string }>('/api/health', {
       method: 'GET',
     });
   }

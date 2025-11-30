@@ -77,7 +77,7 @@ class AuthClient {
      * Check if the backend API is healthy
      */
     async healthCheck() {
-        return this.request('/health', {
+        return this.request('/api/health', {
             method: 'GET',
         });
     }
