@@ -105,6 +105,19 @@ export class AuthClient {
   }
 
   // ============================================================================
+  // Health Check
+  // ============================================================================
+
+  /**
+   * Check if the backend API is healthy
+   */
+  async healthCheck(): Promise<ApiResponse<{ status: string }>> {
+    return this.request<{ status: string }>('/health', {
+      method: 'GET',
+    });
+  }
+
+  // ============================================================================
   // User Authentication Methods
   // ============================================================================
 

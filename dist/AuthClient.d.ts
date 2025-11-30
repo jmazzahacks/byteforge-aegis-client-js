@@ -25,6 +25,12 @@ export declare class AuthClient {
      */
     private request;
     /**
+     * Check if the backend API is healthy
+     */
+    healthCheck(): Promise<ApiResponse<{
+        status: string;
+    }>>;
+    /**
      * Register a new user
      */
     register(email: string, password: string, siteId?: number): Promise<ApiResponse<User>>;
