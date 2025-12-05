@@ -31,6 +31,10 @@ export declare class AuthClient {
         status: string;
     }>>;
     /**
+     * Get a site by its domain (public endpoint)
+     */
+    getSiteByDomain(domain: string): Promise<ApiResponse<Site>>;
+    /**
      * Register a new user
      */
     register(email: string, password: string, siteId?: number): Promise<ApiResponse<User>>;

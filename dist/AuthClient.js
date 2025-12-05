@@ -81,6 +81,14 @@ class AuthClient {
             method: 'GET',
         });
     }
+    /**
+     * Get a site by its domain (public endpoint)
+     */
+    async getSiteByDomain(domain) {
+        return this.request(`/api/sites/by-domain?domain=${encodeURIComponent(domain)}`, {
+            method: 'GET',
+        });
+    }
     // ============================================================================
     // User Authentication Methods
     // ============================================================================
