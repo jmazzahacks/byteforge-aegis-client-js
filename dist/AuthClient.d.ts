@@ -1,7 +1,7 @@
 /**
  * AuthClient - JavaScript/TypeScript client for multi-tenant authentication API
  */
-import type { AuthClientConfig, User, Site, CreateSiteRequest, UpdateSiteRequest, LoginResponse, ApiResponse } from './types';
+import type { AuthClientConfig, User, Site, CreateSiteRequest, UpdateSiteRequest, LoginResponse, VerifyEmailResponse, ApiResponse } from './types';
 export declare class AuthClient {
     private apiUrl;
     private siteId?;
@@ -51,7 +51,7 @@ export declare class AuthClient {
     /**
      * Verify email address with token
      */
-    verifyEmail(token: string): Promise<ApiResponse<User>>;
+    verifyEmail(token: string): Promise<ApiResponse<VerifyEmailResponse>>;
     /**
      * Change password (requires authentication)
      */

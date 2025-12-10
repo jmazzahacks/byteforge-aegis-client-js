@@ -12,6 +12,7 @@ import type {
   LoginRequest,
   LoginResponse,
   VerifyEmailRequest,
+  VerifyEmailResponse,
   ChangePasswordRequest,
   RequestPasswordResetRequest,
   ResetPasswordRequest,
@@ -199,8 +200,8 @@ export class AuthClient {
   /**
    * Verify email address with token
    */
-  async verifyEmail(token: string): Promise<ApiResponse<User>> {
-    return this.request<User>('/api/auth/verify-email', {
+  async verifyEmail(token: string): Promise<ApiResponse<VerifyEmailResponse>> {
+    return this.request<VerifyEmailResponse>('/api/auth/verify-email', {
       method: 'POST',
       body: JSON.stringify({ token } as VerifyEmailRequest),
     });

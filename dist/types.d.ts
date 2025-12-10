@@ -31,6 +31,7 @@ export interface Site {
     name: string;
     domain: string;
     frontend_url: string;
+    verification_redirect_url?: string;
     api_key: string;
     email_from: string;
     email_from_name: string;
@@ -41,6 +42,7 @@ export interface CreateSiteRequest {
     name: string;
     domain: string;
     frontend_url: string;
+    verification_redirect_url?: string;
     email_from: string;
     email_from_name: string;
 }
@@ -48,6 +50,7 @@ export interface UpdateSiteRequest {
     name?: string;
     domain?: string;
     frontend_url?: string;
+    verification_redirect_url?: string;
     email_from?: string;
     email_from_name?: string;
 }
@@ -76,6 +79,10 @@ export interface LogoutRequest {
 }
 export interface VerifyEmailRequest {
     token: string;
+}
+export interface VerifyEmailResponse {
+    user: User;
+    redirect_url: string;
 }
 export interface ChangePasswordRequest {
     old_password: string;
