@@ -160,7 +160,26 @@ Confirm email change with the token from the confirmation email.
 const result = await auth.confirmEmailChange('change-token-from-email');
 ```
 
-### Admin Methods
+### Admin User Methods
+
+These methods require authentication as an admin user (Bearer token with admin role).
+
+#### `adminListUsers()`
+List all users for the authenticated admin's site. Returns users only for the admin's own site (auto-scoped by the backend).
+
+```typescript
+// Login as admin first
+await auth.login('admin@example.com', 'password123');
+
+// List users for admin's site
+const result = await auth.adminListUsers();
+if (result.success) {
+  console.log('Users:', result.data);
+  // [{ id: 1, email: 'user@example.com', role: 'user', is_verified: true, ... }]
+}
+```
+
+### Admin Methods (Master API Key)
 
 These methods require a master API key.
 

@@ -78,6 +78,12 @@ export declare class AuthClient {
      */
     confirmEmailChange(token: string): Promise<ApiResponse<User>>;
     /**
+     * List all users for the authenticated admin's site.
+     * Requires authentication as an admin user (Bearer token with admin role).
+     * Returns users only for the admin's own site (auto-scoped by the backend).
+     */
+    adminListUsers(): Promise<ApiResponse<User[]>>;
+    /**
      * Register an admin user (requires master API key)
      */
     registerAdmin(email: string, password: string, siteId: number): Promise<ApiResponse<User>>;

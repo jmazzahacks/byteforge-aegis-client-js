@@ -282,6 +282,25 @@ export class AuthClient {
   }
 
   // ============================================================================
+  // Admin User Methods (require admin authentication)
+  // ============================================================================
+
+  /**
+   * List all users for the authenticated admin's site.
+   * Requires authentication as an admin user (Bearer token with admin role).
+   * Returns users only for the admin's own site (auto-scoped by the backend).
+   */
+  async adminListUsers(): Promise<ApiResponse<User[]>> {
+    if (!this.authToken) {
+      throw new Error('Authentication required for listing users');
+    }
+
+    return this.request<User[]>('/api/admin/users', {
+      method: 'GET',
+    });
+  }
+
+  // ============================================================================
   // Admin Methods (require master API key)
   // ============================================================================
 
