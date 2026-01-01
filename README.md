@@ -108,11 +108,27 @@ Logout the current user and invalidate the token.
 await auth.logout();
 ```
 
-#### `verifyEmail(token)`
-Verify a user's email address with the token from the verification email.
+#### `checkVerificationToken(token)`
+Check if a verification token is valid and whether password setup is required. This is a non-destructive check (doesn't consume the token).
 
 ```typescript
+const result = await auth.checkVerificationToken('verification-token-from-email');
+if (result.success) {
+  console.log('Password required:', result.data.password_required);
+  console.log('Email:', result.data.email);
+}
+```
+
+#### `verifyEmail(token, password?)`
+Verify a user's email address with the token from the verification email. For admin-created users, password is required. For self-registered users, password is optional.
+
+```typescript
+// For self-registered users (already have password)
 const result = await auth.verifyEmail('verification-token-from-email');
+
+// For admin-created users (must set password)
+const result = await auth.verifyEmail('verification-token-from-email', 'new-password');
+
 if (result.success) {
   console.log('Email verified:', result.data);
 }
@@ -183,11 +199,15 @@ if (result.success) {
 
 These methods require a master API key.
 
-#### `registerAdmin(email, password, siteId)`
-Create a new admin user.
+#### `registerAdmin(email, siteId, role?)`
+Create a new user via admin API. The user will set their own password via email verification link (more secure than admin-set passwords).
 
 ```typescript
-const result = await adminAuth.registerAdmin('admin@example.com', 'password', 1);
+// Create a regular user (default role)
+const result = await adminAuth.registerAdmin('user@example.com', 1);
+
+// Create an admin user
+const result = await adminAuth.registerAdmin('admin@example.com', 1, 'admin');
 ```
 
 #### `createSite(siteData)`
