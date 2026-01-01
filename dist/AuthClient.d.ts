@@ -1,7 +1,7 @@
 /**
  * AuthClient - JavaScript/TypeScript client for multi-tenant authentication API
  */
-import type { AuthClientConfig, User, Site, CreateSiteRequest, UpdateSiteRequest, LoginResponse, VerifyEmailResponse, ApiResponse } from './types';
+import type { AuthClientConfig, User, UserRole, Site, CreateSiteRequest, UpdateSiteRequest, LoginResponse, VerifyEmailResponse, CheckVerificationTokenResponse, ApiResponse } from './types';
 export declare class AuthClient {
     private apiUrl;
     private siteId?;
@@ -49,9 +49,16 @@ export declare class AuthClient {
         message: string;
     }>>;
     /**
-     * Verify email address with token
+     * Check verification token status without consuming it.
+     * Used to determine if password form should be shown.
      */
-    verifyEmail(token: string): Promise<ApiResponse<VerifyEmailResponse>>;
+    checkVerificationToken(token: string): Promise<ApiResponse<CheckVerificationTokenResponse>>;
+    /**
+     * Verify email address with token.
+     * For admin-created users, password is required.
+     * For self-registered users, password is optional/ignored.
+     */
+    verifyEmail(token: string, password?: string): Promise<ApiResponse<VerifyEmailResponse>>;
     /**
      * Change password (requires authentication)
      */
@@ -84,9 +91,10 @@ export declare class AuthClient {
      */
     adminListUsers(): Promise<ApiResponse<User[]>>;
     /**
-     * Register an admin user (requires master API key)
+     * Register a user via admin (requires master API key).
+     * User will set their own password via email verification link.
      */
-    registerAdmin(email: string, password: string, siteId: number): Promise<ApiResponse<User>>;
+    registerAdmin(email: string, siteId: number, role?: UserRole): Promise<ApiResponse<User>>;
     /**
      * Create a new site (requires master API key)
      */

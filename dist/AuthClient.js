@@ -149,12 +149,28 @@ class AuthClient {
         return response;
     }
     /**
-     * Verify email address with token
+     * Check verification token status without consuming it.
+     * Used to determine if password form should be shown.
      */
-    async verifyEmail(token) {
-        return this.request('/api/auth/verify-email', {
+    async checkVerificationToken(token) {
+        return this.request('/api/auth/check-verification-token', {
             method: 'POST',
             body: JSON.stringify({ token }),
+        });
+    }
+    /**
+     * Verify email address with token.
+     * For admin-created users, password is required.
+     * For self-registered users, password is optional/ignored.
+     */
+    async verifyEmail(token, password) {
+        const body = { token };
+        if (password) {
+            body.password = password;
+        }
+        return this.request('/api/auth/verify-email', {
+            method: 'POST',
+            body: JSON.stringify(body),
         });
     }
     /**
@@ -243,19 +259,23 @@ class AuthClient {
     // Admin Methods (require master API key)
     // ============================================================================
     /**
-     * Register an admin user (requires master API key)
+     * Register a user via admin (requires master API key).
+     * User will set their own password via email verification link.
      */
-    async registerAdmin(email, password, siteId) {
+    async registerAdmin(email, siteId, role) {
         if (!this.masterApiKey) {
             throw new Error('Master API key required for admin registration');
         }
+        const body = {
+            site_id: siteId,
+            email,
+        };
+        if (role) {
+            body.role = role;
+        }
         return this.request('/api/admin/register', {
             method: 'POST',
-            body: JSON.stringify({
-                site_id: siteId,
-                email,
-                password,
-            }),
+            body: JSON.stringify(body),
         });
     }
     /**

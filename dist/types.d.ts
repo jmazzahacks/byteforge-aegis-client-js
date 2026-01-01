@@ -79,10 +79,18 @@ export interface LogoutRequest {
 }
 export interface VerifyEmailRequest {
     token: string;
+    password?: string;
 }
 export interface VerifyEmailResponse {
     user: User;
     redirect_url: string;
+}
+export interface CheckVerificationTokenRequest {
+    token: string;
+}
+export interface CheckVerificationTokenResponse {
+    password_required: boolean;
+    email: string;
 }
 export interface ChangePasswordRequest {
     old_password: string;
@@ -105,7 +113,7 @@ export interface ConfirmEmailChangeRequest {
 export interface AdminRegisterRequest {
     site_id: number;
     email: string;
-    password: string;
+    role?: UserRole;
 }
 export interface ErrorResponse {
     error: string;

@@ -5,6 +5,7 @@
 import type {
   AuthClientConfig,
   User,
+  UserRole,
   Site,
   CreateSiteRequest,
   UpdateSiteRequest,
@@ -13,6 +14,7 @@ import type {
   LoginResponse,
   VerifyEmailRequest,
   VerifyEmailResponse,
+  CheckVerificationTokenResponse,
   ChangePasswordRequest,
   RequestPasswordResetRequest,
   ResetPasswordRequest,
@@ -198,12 +200,29 @@ export class AuthClient {
   }
 
   /**
-   * Verify email address with token
+   * Check verification token status without consuming it.
+   * Used to determine if password form should be shown.
    */
-  async verifyEmail(token: string): Promise<ApiResponse<VerifyEmailResponse>> {
+  async checkVerificationToken(token: string): Promise<ApiResponse<CheckVerificationTokenResponse>> {
+    return this.request<CheckVerificationTokenResponse>('/api/auth/check-verification-token', {
+      method: 'POST',
+      body: JSON.stringify({ token }),
+    });
+  }
+
+  /**
+   * Verify email address with token.
+   * For admin-created users, password is required.
+   * For self-registered users, password is optional/ignored.
+   */
+  async verifyEmail(token: string, password?: string): Promise<ApiResponse<VerifyEmailResponse>> {
+    const body: VerifyEmailRequest = { token };
+    if (password) {
+      body.password = password;
+    }
     return this.request<VerifyEmailResponse>('/api/auth/verify-email', {
       method: 'POST',
-      body: JSON.stringify({ token } as VerifyEmailRequest),
+      body: JSON.stringify(body),
     });
   }
 
@@ -305,20 +324,25 @@ export class AuthClient {
   // ============================================================================
 
   /**
-   * Register an admin user (requires master API key)
+   * Register a user via admin (requires master API key).
+   * User will set their own password via email verification link.
    */
-  async registerAdmin(email: string, password: string, siteId: number): Promise<ApiResponse<User>> {
+  async registerAdmin(email: string, siteId: number, role?: UserRole): Promise<ApiResponse<User>> {
     if (!this.masterApiKey) {
       throw new Error('Master API key required for admin registration');
     }
 
+    const body: AdminRegisterRequest = {
+      site_id: siteId,
+      email,
+    };
+    if (role) {
+      body.role = role;
+    }
+
     return this.request<User>('/api/admin/register', {
       method: 'POST',
-      body: JSON.stringify({
-        site_id: siteId,
-        email,
-        password,
-      } as AdminRegisterRequest),
+      body: JSON.stringify(body),
     });
   }
 
