@@ -35,9 +35,11 @@ export declare class AuthClient {
      */
     getSiteByDomain(domain: string): Promise<ApiResponse<Site>>;
     /**
-     * Register a new user
+     * Register a new user.
+     * If password is provided, user can login after email verification.
+     * If password is omitted, user will set their password during email verification.
      */
-    register(email: string, password: string, siteId?: number): Promise<ApiResponse<User>>;
+    register(email: string, password?: string, siteId?: number): Promise<ApiResponse<User>>;
     /**
      * Login a user
      */

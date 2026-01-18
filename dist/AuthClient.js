@@ -93,20 +93,22 @@ class AuthClient {
     // User Authentication Methods
     // ============================================================================
     /**
-     * Register a new user
+     * Register a new user.
+     * If password is provided, user can login after email verification.
+     * If password is omitted, user will set their password during email verification.
      */
     async register(email, password, siteId) {
         const site = siteId || this.siteId;
         if (!site) {
             throw new Error('siteId is required for registration');
         }
+        const body = { site_id: site, email };
+        if (password) {
+            body.password = password;
+        }
         return this.request('/api/auth/register', {
             method: 'POST',
-            body: JSON.stringify({
-                site_id: site,
-                email,
-                password,
-            }),
+            body: JSON.stringify(body),
         });
     }
     /**

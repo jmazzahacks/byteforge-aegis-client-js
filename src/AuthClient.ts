@@ -134,21 +134,24 @@ export class AuthClient {
   // ============================================================================
 
   /**
-   * Register a new user
+   * Register a new user.
+   * If password is provided, user can login after email verification.
+   * If password is omitted, user will set their password during email verification.
    */
-  async register(email: string, password: string, siteId?: number): Promise<ApiResponse<User>> {
+  async register(email: string, password?: string, siteId?: number): Promise<ApiResponse<User>> {
     const site = siteId || this.siteId;
     if (!site) {
       throw new Error('siteId is required for registration');
     }
 
+    const body: RegisterRequest = { site_id: site, email };
+    if (password) {
+      body.password = password;
+    }
+
     return this.request<User>('/api/auth/register', {
       method: 'POST',
-      body: JSON.stringify({
-        site_id: site,
-        email,
-        password,
-      } as RegisterRequest),
+      body: JSON.stringify(body),
     });
   }
 

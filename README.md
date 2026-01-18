@@ -78,11 +78,16 @@ const adminAuth = new AuthClient({
 
 ### User Authentication
 
-#### `register(email, password, siteId?)`
-Register a new user account.
+#### `register(email, password?, siteId?)`
+Register a new user account. Password is optional - if omitted, user sets their password during email verification.
 
 ```typescript
+// With password (traditional flow)
 const result = await auth.register('user@example.com', 'password123');
+
+// Without password (simpler UX - user sets password via email)
+const result = await auth.register('user@example.com');
+
 if (result.success) {
   console.log('User created:', result.data);
 } else {

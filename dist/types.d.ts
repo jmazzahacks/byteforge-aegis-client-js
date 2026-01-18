@@ -57,7 +57,7 @@ export interface UpdateSiteRequest {
 export interface RegisterRequest {
     site_id: number;
     email: string;
-    password: string;
+    password?: string;
 }
 export interface RegisterResponse {
     user: User;

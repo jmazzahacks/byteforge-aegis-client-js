@@ -81,7 +81,7 @@ export interface UpdateSiteRequest {
 export interface RegisterRequest {
   site_id: number;
   email: string;
-  password: string;
+  password?: string;  // Optional - if not provided, user sets via email verification
 }
 
 export interface RegisterResponse {
