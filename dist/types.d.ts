@@ -37,6 +37,7 @@ export interface Site {
     email_from_name: string;
     created_at: number;
     updated_at: number;
+    allow_self_registration: boolean;
 }
 export interface CreateSiteRequest {
     name: string;
@@ -45,6 +46,7 @@ export interface CreateSiteRequest {
     verification_redirect_url?: string;
     email_from: string;
     email_from_name: string;
+    allow_self_registration?: boolean;
 }
 export interface UpdateSiteRequest {
     name?: string;
@@ -53,6 +55,7 @@ export interface UpdateSiteRequest {
     verification_redirect_url?: string;
     email_from?: string;
     email_from_name?: string;
+    allow_self_registration?: boolean;
 }
 export interface RegisterRequest {
     site_id: number;

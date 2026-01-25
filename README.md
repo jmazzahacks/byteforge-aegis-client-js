@@ -81,6 +81,8 @@ const adminAuth = new AuthClient({
 #### `register(email, password?, siteId?)`
 Register a new user account. Password is optional - if omitted, user sets their password during email verification.
 
+**Note:** This method may fail if the site has disabled self-registration (`allow_self_registration: false`).
+
 ```typescript
 // With password (traditional flow)
 const result = await auth.register('user@example.com', 'password123');
@@ -225,6 +227,7 @@ const result = await adminAuth.createSite({
   frontend_url: 'https://mysite.com',
   email_from: 'noreply@mysite.com',
   email_from_name: 'My Site',
+  allow_self_registration: true, // optional, defaults to true
 });
 ```
 
@@ -252,6 +255,11 @@ Update site configuration.
 const result = await adminAuth.updateSite(1, {
   name: 'Updated Site Name',
   frontend_url: 'https://new-url.com',
+});
+
+// Disable self-registration for a site
+const result = await adminAuth.updateSite(1, {
+  allow_self_registration: false,
 });
 ```
 
