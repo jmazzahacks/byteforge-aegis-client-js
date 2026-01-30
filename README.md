@@ -278,52 +278,321 @@ const token = auth.getAuthToken();
 auth.clearAuthToken();
 ```
 
-## Next.js Example
+## Tenant Site Implementation
+
+Verification and password reset emails link directly to your tenant site (using the site's `frontend_url`). Your site needs to implement these pages using the AuthClient.
+
+### Email Verification Page (`/verify-email`)
+
+This page handles both self-registered users (who already have a password) and admin-created users (who need to set a password).
 
 ```typescript
-// app/auth/verify-email/page.tsx
+// app/verify-email/page.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { AuthClient } from 'byteforge-aegis-client-js';
 
+type Status = 'loading' | 'password_required' | 'verifying' | 'success' | 'error';
+
 export default function VerifyEmailPage() {
   const searchParams = useSearchParams();
-  const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
-  const [message, setMessage] = useState('');
+  const [status, setStatus] = useState<Status>('loading');
+  const [message, setMessage] = useState('Checking verification link...');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
 
+  const token = searchParams.get('token');
+
+  // Initialize client - uses relative URL if behind same nginx as Aegis API
+  // Or set NEXT_PUBLIC_AUTH_API_URL for cross-domain setup
+  const getClient = () => new AuthClient({
+    apiUrl: process.env.NEXT_PUBLIC_AUTH_API_URL || '',
+  });
+
+  // Check token on page load
   useEffect(() => {
-    const token = searchParams.get('token');
     if (!token) {
       setStatus('error');
-      setMessage('No verification token provided');
+      setMessage('Invalid verification link');
       return;
     }
 
-    const auth = new AuthClient({
-      apiUrl: process.env.NEXT_PUBLIC_AUTH_API_URL!,
-    });
+    const checkToken = async () => {
+      const client = getClient();
+      const result = await client.checkVerificationToken(token);
 
-    auth.verifyEmail(token).then((result) => {
       if (result.success) {
-        setStatus('success');
-        setMessage('Email verified successfully!');
+        setEmail(result.data.email);
+        if (result.data.password_required) {
+          // Admin-created user - show password form
+          setStatus('password_required');
+          setMessage('');
+        } else {
+          // Self-registered user - verify immediately
+          await verifyEmail();
+        }
       } else {
         setStatus('error');
-        setMessage(result.error);
+        setMessage(result.error || 'Invalid or expired verification link');
       }
-    });
-  }, [searchParams]);
+    };
+
+    checkToken();
+  }, [token]);
+
+  const verifyEmail = async (userPassword?: string) => {
+    if (!token) return;
+
+    setStatus('verifying');
+    setMessage('Verifying your email...');
+
+    const client = getClient();
+    const result = await client.verifyEmail(token, userPassword);
+
+    if (result.success) {
+      setStatus('success');
+      setMessage('Email verified successfully!');
+      // Optionally redirect: window.location.href = result.data.redirect_url;
+    } else {
+      setStatus('error');
+      setMessage(result.error || 'Verification failed');
+    }
+  };
+
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (password.length < 8) {
+      setMessage('Password must be at least 8 characters');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setMessage('Passwords do not match');
+      return;
+    }
+
+    await verifyEmail(password);
+  };
+
+  // Render based on status
+  if (status === 'password_required') {
+    return (
+      <div>
+        <h1>Set Your Password</h1>
+        <p>Complete your account setup for {email}</p>
+        <form onSubmit={handlePasswordSubmit}>
+          <input
+            type="password"
+            placeholder="Password (min 8 characters)"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            minLength={8}
+            required
+          />
+          <input
+            type="password"
+            placeholder="Confirm password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            required
+          />
+          {message && <p style={{ color: 'red' }}>{message}</p>}
+          <button type="submit">Set Password & Verify</button>
+        </form>
+      </div>
+    );
+  }
 
   return (
     <div>
-      {status === 'loading' && <p>Verifying your email...</p>}
-      {status === 'success' && <p>{message}</p>}
-      {status === 'error' && <p>Error: {message}</p>}
+      <h1>Email Verification</h1>
+      {status === 'loading' && <p>Checking verification link...</p>}
+      {status === 'verifying' && <p>Verifying your email...</p>}
+      {status === 'success' && <p style={{ color: 'green' }}>{message}</p>}
+      {status === 'error' && <p style={{ color: 'red' }}>{message}</p>}
     </div>
   );
 }
+```
+
+### Password Reset Page (`/reset-password`)
+
+```typescript
+// app/reset-password/page.tsx
+'use client';
+
+import { useState } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { AuthClient } from 'byteforge-aegis-client-js';
+
+type Status = 'idle' | 'loading' | 'success' | 'error';
+
+export default function ResetPasswordPage() {
+  const searchParams = useSearchParams();
+  const [status, setStatus] = useState<Status>('idle');
+  const [message, setMessage] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+
+  const token = searchParams.get('token');
+
+  const getClient = () => new AuthClient({
+    apiUrl: process.env.NEXT_PUBLIC_AUTH_API_URL || '',
+  });
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!token) {
+      setStatus('error');
+      setMessage('Invalid reset link');
+      return;
+    }
+
+    if (password.length < 8) {
+      setStatus('error');
+      setMessage('Password must be at least 8 characters');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setStatus('error');
+      setMessage('Passwords do not match');
+      return;
+    }
+
+    setStatus('loading');
+    setMessage('Resetting password...');
+
+    const client = getClient();
+    const result = await client.resetPassword(token, password);
+
+    if (result.success) {
+      setStatus('success');
+      setMessage('Password reset successfully! You can now log in.');
+    } else {
+      setStatus('error');
+      setMessage(result.error || 'Failed to reset password');
+    }
+  };
+
+  if (!token) {
+    return <p>Invalid reset link</p>;
+  }
+
+  return (
+    <div>
+      <h1>Reset Your Password</h1>
+      {status !== 'success' ? (
+        <form onSubmit={handleSubmit}>
+          <input
+            type="password"
+            placeholder="New password (min 8 characters)"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            minLength={8}
+            required
+            disabled={status === 'loading'}
+          />
+          <input
+            type="password"
+            placeholder="Confirm new password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            required
+            disabled={status === 'loading'}
+          />
+          {message && status === 'error' && <p style={{ color: 'red' }}>{message}</p>}
+          <button type="submit" disabled={status === 'loading'}>
+            {status === 'loading' ? 'Resetting...' : 'Reset Password'}
+          </button>
+        </form>
+      ) : (
+        <p style={{ color: 'green' }}>{message}</p>
+      )}
+    </div>
+  );
+}
+```
+
+### Email Change Confirmation Page (`/confirm-email-change`)
+
+```typescript
+// app/confirm-email-change/page.tsx
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { AuthClient } from 'byteforge-aegis-client-js';
+
+type Status = 'loading' | 'success' | 'error';
+
+export default function ConfirmEmailChangePage() {
+  const searchParams = useSearchParams();
+  const [status, setStatus] = useState<Status>('loading');
+  const [message, setMessage] = useState('Confirming email change...');
+
+  const token = searchParams.get('token');
+
+  useEffect(() => {
+    if (!token) {
+      setStatus('error');
+      setMessage('Invalid confirmation link');
+      return;
+    }
+
+    const confirmChange = async () => {
+      const client = new AuthClient({
+        apiUrl: process.env.NEXT_PUBLIC_AUTH_API_URL || '',
+      });
+
+      const result = await client.confirmEmailChange(token);
+
+      if (result.success) {
+        setStatus('success');
+        setMessage('Email changed successfully!');
+      } else {
+        setStatus('error');
+        setMessage(result.error || 'Failed to confirm email change');
+      }
+    };
+
+    confirmChange();
+  }, [token]);
+
+  return (
+    <div>
+      <h1>Email Change Confirmation</h1>
+      {status === 'loading' && <p>Confirming email change...</p>}
+      {status === 'success' && <p style={{ color: 'green' }}>{message}</p>}
+      {status === 'error' && <p style={{ color: 'red' }}>{message}</p>}
+    </div>
+  );
+}
+```
+
+### Configuration Notes
+
+**Same-origin setup (recommended):** If your tenant site and Aegis API are behind the same nginx that routes `/api/*` to the backend, use an empty `apiUrl`:
+
+```typescript
+const client = new AuthClient({ apiUrl: '' });
+```
+
+**Cross-origin setup:** If your tenant site calls the Aegis API on a different domain, set the environment variable:
+
+```bash
+NEXT_PUBLIC_AUTH_API_URL=https://auth.example.com
+```
+
+```typescript
+const client = new AuthClient({
+  apiUrl: process.env.NEXT_PUBLIC_AUTH_API_URL,
+});
 ```
 
 ## TypeScript Support
