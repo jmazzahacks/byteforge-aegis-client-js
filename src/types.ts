@@ -13,6 +13,10 @@ export interface AuthClientConfig {
   siteId?: number;
   /** Master API key for administrative operations (site management, admin user creation) */
   masterApiKey?: string;
+  /** Enable automatic token refresh (default: true) */
+  autoRefresh?: boolean;
+  /** Seconds before expiration to trigger proactive refresh (default: 300 = 5 minutes) */
+  refreshBuffer?: number;
 }
 
 // ============================================================================
@@ -37,6 +41,13 @@ export interface AuthToken {
   site_id: number;
   expires_at: number;
   created_at: number;
+}
+
+export interface RefreshToken {
+  token: string;
+  user_id: number;
+  site_id: number;
+  expires_at: number;
 }
 
 // ============================================================================
@@ -98,11 +109,17 @@ export interface LoginRequest {
 }
 
 export interface LoginResponse {
-  token: string;
-  user_id: number;
-  site_id: number;
-  expires_at: number;
-  created_at: number;
+  auth_token: AuthToken;
+  refresh_token: RefreshToken;
+}
+
+export interface RefreshTokenRequest {
+  refresh_token: string;
+}
+
+export interface RefreshTokenResponse {
+  auth_token: AuthToken;
+  refresh_token?: RefreshToken;
 }
 
 export interface LogoutRequest {

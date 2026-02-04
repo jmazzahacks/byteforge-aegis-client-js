@@ -33,11 +33,12 @@ if (registerResult.success) {
   console.log('User registered:', registerResult.data);
 }
 
-// Login
+// Login (returns auth token + refresh token)
 const loginResult = await auth.login('user@example.com', 'password123');
 if (loginResult.success) {
-  console.log('Logged in with token:', loginResult.data.token);
-  // Token is automatically stored in the client
+  console.log('Auth token:', loginResult.data.auth_token.token);
+  console.log('Refresh token:', loginResult.data.refresh_token.token);
+  // Tokens are automatically stored in the client
 }
 
 // Logout
@@ -50,9 +51,11 @@ await auth.logout();
 
 ```typescript
 interface AuthClientConfig {
-  apiUrl: string;        // Base URL of the auth API
-  siteId?: number;       // Default site ID for user operations
-  masterApiKey?: string; // Master API key for admin operations
+  apiUrl: string;         // Base URL of the auth API
+  siteId?: number;        // Default site ID for user operations
+  masterApiKey?: string;  // Master API key for admin operations
+  autoRefresh?: boolean;  // Enable automatic token refresh (default: true)
+  refreshBuffer?: number; // Seconds before expiration to refresh (default: 300)
 }
 ```
 
@@ -98,13 +101,28 @@ if (result.success) {
 ```
 
 #### `login(email, password, siteId?)`
-Login a user and receive an authentication token.
+Login a user and receive both an auth token (1 hour) and refresh token (7 days).
 
 ```typescript
 const result = await auth.login('user@example.com', 'password123');
 if (result.success) {
-  console.log('Token:', result.data.token);
-  // Token is automatically stored
+  console.log('Auth token:', result.data.auth_token.token);
+  console.log('Refresh token:', result.data.refresh_token.token);
+  // Tokens are automatically stored in the client
+}
+```
+
+#### `refreshAuthToken()`
+Manually refresh the auth token using the stored refresh token. This is called automatically when `autoRefresh` is enabled.
+
+```typescript
+const result = await auth.refreshAuthToken();
+if (result.success) {
+  console.log('New auth token:', result.data.auth_token.token);
+  // If token rotation is enabled, a new refresh token is also returned
+  if (result.data.refresh_token) {
+    console.log('New refresh token:', result.data.refresh_token.token);
+  }
 }
 ```
 
@@ -265,18 +283,64 @@ const result = await adminAuth.updateSite(1, {
 
 ## Token Management
 
-The client automatically manages authentication tokens:
+The client automatically manages authentication and refresh tokens:
 
 ```typescript
-// Set token manually
-auth.setAuthToken('your-token-here');
-
-// Get current token
-const token = auth.getAuthToken();
-
-// Clear token
+// Auth token methods
+auth.setAuthToken('your-auth-token');
+const authToken = auth.getAuthToken();
 auth.clearAuthToken();
+
+// Refresh token methods
+auth.setRefreshToken('your-refresh-token');
+const refreshToken = auth.getRefreshToken();
+auth.clearRefreshToken();
+
+// Clear all tokens
+auth.clearAllTokens();
+
+// Manual refresh (usually not needed with autoRefresh enabled)
+await auth.refreshAuthToken();
 ```
+
+### Auto-Refresh Behavior
+
+When `autoRefresh` is enabled (default):
+- **Proactive refresh**: Token is refreshed automatically 5 minutes before expiration
+- **Reactive refresh**: On 401 response, the client automatically refreshes and retries the request
+
+To disable auto-refresh:
+```typescript
+const auth = new AuthClient({
+  apiUrl: 'https://auth.example.com',
+  siteId: 1,
+  autoRefresh: false,
+});
+```
+
+### Persisting Tokens
+
+If you need to persist tokens across page reloads:
+
+```typescript
+// After login, persist tokens
+const result = await auth.login(email, password);
+if (result.success) {
+  localStorage.setItem('auth_token', result.data.auth_token.token);
+  localStorage.setItem('refresh_token', result.data.refresh_token.token);
+  localStorage.setItem('expires_at', result.data.auth_token.expires_at.toString());
+}
+
+// On app startup, restore tokens
+const authToken = localStorage.getItem('auth_token');
+const refreshToken = localStorage.getItem('refresh_token');
+if (authToken) auth.setAuthToken(authToken);
+if (refreshToken) auth.setRefreshToken(refreshToken);
+```
+
+## Migration Guide
+
+If upgrading from v1.x, see [MIGRATION.md](./MIGRATION.md) for breaking changes and migration steps.
 
 ## Tenant Site Implementation
 
@@ -600,7 +664,14 @@ const client = new AuthClient({
 This package is written in TypeScript and includes full type definitions. All types are exported:
 
 ```typescript
-import type { User, Site, AuthToken, LoginResponse } from 'byteforge-aegis-client-js';
+import type {
+  User,
+  Site,
+  AuthToken,
+  RefreshToken,
+  LoginResponse,
+  RefreshTokenResponse,
+} from 'byteforge-aegis-client-js';
 ```
 
 ## Error Handling

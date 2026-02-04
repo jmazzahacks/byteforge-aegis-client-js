@@ -9,6 +9,8 @@ class AuthClient {
         this.apiUrl = config.apiUrl.replace(/\/$/, ''); // Remove trailing slash
         this.siteId = config.siteId;
         this.masterApiKey = config.masterApiKey;
+        this.autoRefresh = config.autoRefresh ?? true;
+        this.refreshBuffer = config.refreshBuffer ?? 300; // 5 minutes default
     }
     /**
      * Set the authentication token for authenticated requests
@@ -21,6 +23,7 @@ class AuthClient {
      */
     clearAuthToken() {
         this.authToken = undefined;
+        this.authTokenExpiresAt = undefined;
     }
     /**
      * Get the current authentication token
@@ -29,9 +32,57 @@ class AuthClient {
         return this.authToken;
     }
     /**
+     * Set the refresh token
+     */
+    setRefreshToken(token) {
+        this.refreshToken = token;
+    }
+    /**
+     * Get the current refresh token
+     */
+    getRefreshToken() {
+        return this.refreshToken;
+    }
+    /**
+     * Clear the refresh token
+     */
+    clearRefreshToken() {
+        this.refreshToken = undefined;
+    }
+    /**
+     * Clear all tokens (auth and refresh)
+     */
+    clearAllTokens() {
+        this.authToken = undefined;
+        this.authTokenExpiresAt = undefined;
+        this.refreshToken = undefined;
+    }
+    /**
+     * Set both auth and refresh tokens from login response
+     */
+    setTokensFromLoginResponse(response) {
+        this.authToken = response.auth_token.token;
+        this.authTokenExpiresAt = response.auth_token.expires_at;
+        this.refreshToken = response.refresh_token.token;
+    }
+    /**
+     * Check if auth token needs refresh
+     */
+    shouldRefreshToken() {
+        if (!this.authTokenExpiresAt || !this.refreshToken) {
+            return false;
+        }
+        const now = Math.floor(Date.now() / 1000);
+        return this.authTokenExpiresAt - now < this.refreshBuffer;
+    }
+    /**
      * Make an HTTP request to the API
      */
-    async request(endpoint, options = {}) {
+    async request(endpoint, options = {}, skipAutoRefresh = false) {
+        // Proactive refresh if token is about to expire
+        if (!skipAutoRefresh && this.autoRefresh && this.shouldRefreshToken()) {
+            await this.refreshAuthToken();
+        }
         const url = `${this.apiUrl}${endpoint}`;
         const headers = {
             'Content-Type': 'application/json',
@@ -51,6 +102,14 @@ class AuthClient {
                 headers,
             });
             const data = await response.json();
+            // Handle 401 with automatic refresh retry
+            if (response.status === 401 && !skipAutoRefresh && this.refreshToken) {
+                const refreshResult = await this.refreshAuthToken();
+                if (refreshResult.success) {
+                    // Retry original request with new token
+                    return this.request(endpoint, options, true);
+                }
+            }
             if (response.ok) {
                 return { success: true, data: data };
             }
@@ -80,6 +139,32 @@ class AuthClient {
         return this.request('/api/health', {
             method: 'GET',
         });
+    }
+    /**
+     * Refresh the auth token using the refresh token
+     */
+    async refreshAuthToken() {
+        if (!this.refreshToken) {
+            return {
+                success: false,
+                error: 'No refresh token available',
+                statusCode: 0,
+            };
+        }
+        const response = await this.request('/api/auth/refresh', {
+            method: 'POST',
+            body: JSON.stringify({ refresh_token: this.refreshToken }),
+        }, true // Skip auto-refresh to avoid infinite loop
+        );
+        if (response.success) {
+            this.authToken = response.data.auth_token.token;
+            this.authTokenExpiresAt = response.data.auth_token.expires_at;
+            // Update refresh token if rotation provided new one
+            if (response.data.refresh_token) {
+                this.refreshToken = response.data.refresh_token.token;
+            }
+        }
+        return response;
     }
     /**
      * Get a site by its domain (public endpoint)
@@ -127,9 +212,9 @@ class AuthClient {
                 password,
             }),
         });
-        // Automatically set the auth token on successful login
+        // Automatically set tokens on successful login
         if (response.success) {
-            this.setAuthToken(response.data.token);
+            this.setTokensFromLoginResponse(response.data);
         }
         return response;
     }
@@ -144,10 +229,8 @@ class AuthClient {
             method: 'POST',
             body: JSON.stringify({ token: this.authToken }),
         });
-        // Clear the token after logout
-        if (response.success) {
-            this.clearAuthToken();
-        }
+        // Clear all tokens after logout (regardless of response)
+        this.clearAllTokens();
         return response;
     }
     /**

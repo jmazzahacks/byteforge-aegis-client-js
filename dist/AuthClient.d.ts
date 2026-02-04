@@ -1,12 +1,16 @@
 /**
  * AuthClient - JavaScript/TypeScript client for multi-tenant authentication API
  */
-import type { AuthClientConfig, User, UserRole, Site, CreateSiteRequest, UpdateSiteRequest, LoginResponse, VerifyEmailResponse, CheckVerificationTokenResponse, ApiResponse } from './types';
+import type { AuthClientConfig, User, UserRole, Site, CreateSiteRequest, UpdateSiteRequest, LoginResponse, RefreshTokenResponse, VerifyEmailResponse, CheckVerificationTokenResponse, ApiResponse } from './types';
 export declare class AuthClient {
     private apiUrl;
     private siteId?;
     private masterApiKey?;
     private authToken?;
+    private refreshToken?;
+    private authTokenExpiresAt?;
+    private autoRefresh;
+    private refreshBuffer;
     constructor(config: AuthClientConfig);
     /**
      * Set the authentication token for authenticated requests
@@ -21,6 +25,30 @@ export declare class AuthClient {
      */
     getAuthToken(): string | undefined;
     /**
+     * Set the refresh token
+     */
+    setRefreshToken(token: string): void;
+    /**
+     * Get the current refresh token
+     */
+    getRefreshToken(): string | undefined;
+    /**
+     * Clear the refresh token
+     */
+    clearRefreshToken(): void;
+    /**
+     * Clear all tokens (auth and refresh)
+     */
+    clearAllTokens(): void;
+    /**
+     * Set both auth and refresh tokens from login response
+     */
+    setTokensFromLoginResponse(response: LoginResponse): void;
+    /**
+     * Check if auth token needs refresh
+     */
+    private shouldRefreshToken;
+    /**
      * Make an HTTP request to the API
      */
     private request;
@@ -30,6 +58,10 @@ export declare class AuthClient {
     healthCheck(): Promise<ApiResponse<{
         status: string;
     }>>;
+    /**
+     * Refresh the auth token using the refresh token
+     */
+    refreshAuthToken(): Promise<ApiResponse<RefreshTokenResponse>>;
     /**
      * Get a site by its domain (public endpoint)
      */

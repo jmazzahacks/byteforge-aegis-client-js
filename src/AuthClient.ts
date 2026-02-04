@@ -12,6 +12,7 @@ import type {
   RegisterRequest,
   LoginRequest,
   LoginResponse,
+  RefreshTokenResponse,
   VerifyEmailRequest,
   VerifyEmailResponse,
   CheckVerificationTokenResponse,
@@ -29,11 +30,17 @@ export class AuthClient {
   private siteId?: number;
   private masterApiKey?: string;
   private authToken?: string;
+  private refreshToken?: string;
+  private authTokenExpiresAt?: number;
+  private autoRefresh: boolean;
+  private refreshBuffer: number;
 
   constructor(config: AuthClientConfig) {
     this.apiUrl = config.apiUrl.replace(/\/$/, ''); // Remove trailing slash
     this.siteId = config.siteId;
     this.masterApiKey = config.masterApiKey;
+    this.autoRefresh = config.autoRefresh ?? true;
+    this.refreshBuffer = config.refreshBuffer ?? 300; // 5 minutes default
   }
 
   /**
@@ -48,6 +55,7 @@ export class AuthClient {
    */
   clearAuthToken(): void {
     this.authToken = undefined;
+    this.authTokenExpiresAt = undefined;
   }
 
   /**
@@ -58,12 +66,68 @@ export class AuthClient {
   }
 
   /**
+   * Set the refresh token
+   */
+  setRefreshToken(token: string): void {
+    this.refreshToken = token;
+  }
+
+  /**
+   * Get the current refresh token
+   */
+  getRefreshToken(): string | undefined {
+    return this.refreshToken;
+  }
+
+  /**
+   * Clear the refresh token
+   */
+  clearRefreshToken(): void {
+    this.refreshToken = undefined;
+  }
+
+  /**
+   * Clear all tokens (auth and refresh)
+   */
+  clearAllTokens(): void {
+    this.authToken = undefined;
+    this.authTokenExpiresAt = undefined;
+    this.refreshToken = undefined;
+  }
+
+  /**
+   * Set both auth and refresh tokens from login response
+   */
+  setTokensFromLoginResponse(response: LoginResponse): void {
+    this.authToken = response.auth_token.token;
+    this.authTokenExpiresAt = response.auth_token.expires_at;
+    this.refreshToken = response.refresh_token.token;
+  }
+
+  /**
+   * Check if auth token needs refresh
+   */
+  private shouldRefreshToken(): boolean {
+    if (!this.authTokenExpiresAt || !this.refreshToken) {
+      return false;
+    }
+    const now = Math.floor(Date.now() / 1000);
+    return this.authTokenExpiresAt - now < this.refreshBuffer;
+  }
+
+  /**
    * Make an HTTP request to the API
    */
   private async request<T>(
     endpoint: string,
-    options: RequestInit = {}
+    options: RequestInit = {},
+    skipAutoRefresh: boolean = false
   ): Promise<ApiResponse<T>> {
+    // Proactive refresh if token is about to expire
+    if (!skipAutoRefresh && this.autoRefresh && this.shouldRefreshToken()) {
+      await this.refreshAuthToken();
+    }
+
     const url = `${this.apiUrl}${endpoint}`;
 
     const headers: Record<string, string> = {
@@ -88,6 +152,15 @@ export class AuthClient {
       });
 
       const data = await response.json() as any;
+
+      // Handle 401 with automatic refresh retry
+      if (response.status === 401 && !skipAutoRefresh && this.refreshToken) {
+        const refreshResult = await this.refreshAuthToken();
+        if (refreshResult.success) {
+          // Retry original request with new token
+          return this.request<T>(endpoint, options, true);
+        }
+      }
 
       if (response.ok) {
         return { success: true, data: data as T };
@@ -118,6 +191,40 @@ export class AuthClient {
     return this.request<{ status: string }>('/api/health', {
       method: 'GET',
     });
+  }
+
+  /**
+   * Refresh the auth token using the refresh token
+   */
+  async refreshAuthToken(): Promise<ApiResponse<RefreshTokenResponse>> {
+    if (!this.refreshToken) {
+      return {
+        success: false,
+        error: 'No refresh token available',
+        statusCode: 0,
+      };
+    }
+
+    const response = await this.request<RefreshTokenResponse>(
+      '/api/auth/refresh',
+      {
+        method: 'POST',
+        body: JSON.stringify({ refresh_token: this.refreshToken }),
+      },
+      true // Skip auto-refresh to avoid infinite loop
+    );
+
+    if (response.success) {
+      this.authToken = response.data.auth_token.token;
+      this.authTokenExpiresAt = response.data.auth_token.expires_at;
+
+      // Update refresh token if rotation provided new one
+      if (response.data.refresh_token) {
+        this.refreshToken = response.data.refresh_token.token;
+      }
+    }
+
+    return response;
   }
 
   /**
@@ -173,9 +280,9 @@ export class AuthClient {
       } as LoginRequest),
     });
 
-    // Automatically set the auth token on successful login
+    // Automatically set tokens on successful login
     if (response.success) {
-      this.setAuthToken(response.data.token);
+      this.setTokensFromLoginResponse(response.data);
     }
 
     return response;
@@ -194,10 +301,8 @@ export class AuthClient {
       body: JSON.stringify({ token: this.authToken }),
     });
 
-    // Clear the token after logout
-    if (response.success) {
-      this.clearAuthToken();
-    }
+    // Clear all tokens after logout (regardless of response)
+    this.clearAllTokens();
 
     return response;
   }
