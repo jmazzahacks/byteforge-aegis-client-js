@@ -370,7 +370,7 @@ class AuthClient {
         if (!this.masterApiKey) {
             throw new Error('Master API key required for site creation');
         }
-        return this.request('/api/admin/sites', {
+        return this.request('/api/sites', {
             method: 'POST',
             body: JSON.stringify(siteData),
         });
@@ -382,7 +382,7 @@ class AuthClient {
         if (!this.masterApiKey) {
             throw new Error('Master API key required for site retrieval');
         }
-        return this.request(`/api/admin/sites/${siteId}`, {
+        return this.request(`/api/sites/${siteId}`, {
             method: 'GET',
         });
     }
@@ -393,7 +393,7 @@ class AuthClient {
         if (!this.masterApiKey) {
             throw new Error('Master API key required for listing sites');
         }
-        return this.request('/api/admin/sites', {
+        return this.request('/api/sites', {
             method: 'GET',
         });
     }
@@ -404,7 +404,7 @@ class AuthClient {
         if (!this.masterApiKey) {
             throw new Error('Master API key required for site update');
         }
-        return this.request(`/api/admin/sites/${siteId}`, {
+        return this.request(`/api/sites/${siteId}`, {
             method: 'PUT',
             body: JSON.stringify(updates),
         });
