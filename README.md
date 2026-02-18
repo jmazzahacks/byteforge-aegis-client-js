@@ -246,6 +246,7 @@ const result = await adminAuth.createSite({
   email_from: 'noreply@mysite.com',
   email_from_name: 'My Site',
   allow_self_registration: true, // optional, defaults to true
+  webhook_url: 'https://mysite.com/api/webhooks/aegis', // optional
 });
 ```
 
@@ -266,6 +267,17 @@ if (result.success) {
 }
 ```
 
+#### `listUsersBySite(siteId)`
+List all users for a specific site.
+
+```typescript
+const result = await adminAuth.listUsersBySite(1);
+if (result.success) {
+  console.log('Users:', result.data);
+  // [{ id: 1, email: 'user@example.com', role: 'user', is_verified: true, ... }]
+}
+```
+
 #### `updateSite(siteId, updates)`
 Update site configuration.
 
@@ -278,6 +290,21 @@ const result = await adminAuth.updateSite(1, {
 // Disable self-registration for a site
 const result = await adminAuth.updateSite(1, {
   allow_self_registration: false,
+});
+
+// Configure a webhook URL (a secret is auto-generated)
+const result = await adminAuth.updateSite(1, {
+  webhook_url: 'https://mysite.com/api/webhooks/aegis',
+});
+
+// Regenerate the webhook secret
+const result = await adminAuth.updateSite(1, {
+  regenerate_webhook_secret: true,
+});
+
+// Remove the webhook
+const result = await adminAuth.updateSite(1, {
+  webhook_url: null,
 });
 ```
 
@@ -337,6 +364,139 @@ const refreshToken = localStorage.getItem('refresh_token');
 if (authToken) auth.setAuthToken(authToken);
 if (refreshToken) auth.setRefreshToken(refreshToken);
 ```
+
+## Webhooks
+
+Aegis can notify your tenant application when authentication events occur by sending signed HTTP POST requests to a configured webhook URL. This allows your application to provision users, sync roles, or trigger workflows automatically.
+
+### Setup
+
+Configure a webhook URL when creating or updating a site:
+
+```typescript
+// During site creation
+const result = await adminAuth.createSite({
+  name: 'My Site',
+  domain: 'mysite.com',
+  frontend_url: 'https://mysite.com',
+  email_from: 'noreply@mysite.com',
+  email_from_name: 'My Site',
+  webhook_url: 'https://mysite.com/api/webhooks/aegis',
+});
+
+// The webhook_secret is auto-generated and returned in the site object
+console.log('Webhook secret:', result.data.webhook_secret);
+```
+
+### Events
+
+| Event | Trigger |
+|-------|---------|
+| `user.verified` | User completes email verification (both self-registered and admin-created users) |
+
+### Payload
+
+Each webhook POST includes a JSON body with the following structure:
+
+```json
+{
+  "event_type": "user.verified",
+  "site_id": 1,
+  "user_id": 42,
+  "email": "user@example.com",
+  "aegis_role": "user",
+  "timestamp": 1708300000
+}
+```
+
+**Note:** `aegis_role` is the user's role within Aegis (`"user"` or `"admin"`), which is distinct from any roles your tenant application may assign.
+
+### Signature Verification
+
+Every webhook includes an HMAC-SHA256 signature so your application can verify the request is authentic. The signature covers both the timestamp and body to prevent replay attacks.
+
+**Headers sent with each webhook:**
+
+| Header | Description |
+|--------|-------------|
+| `X-Aegis-Signature` | `sha256=<hex-digest>` — HMAC-SHA256 of `{timestamp}.{body}` |
+| `X-Aegis-Event` | Event type (e.g., `user.verified`) |
+| `X-Aegis-Timestamp` | Unix timestamp of the event |
+
+**Verification example (Node.js/Express):**
+
+```typescript
+import crypto from 'crypto';
+
+function verifyWebhookSignature(
+  secret: string,
+  signature: string,
+  timestamp: string,
+  body: string
+): boolean {
+  const expected = crypto
+    .createHmac('sha256', secret)
+    .update(`${timestamp}.${body}`)
+    .digest('hex');
+
+  return crypto.timingSafeEqual(
+    Buffer.from(`sha256=${expected}`),
+    Buffer.from(signature)
+  );
+}
+
+// Express route handler
+app.post('/api/webhooks/aegis', (req, res) => {
+  const signature = req.headers['x-aegis-signature'] as string;
+  const timestamp = req.headers['x-aegis-timestamp'] as string;
+  const body = JSON.stringify(req.body);
+
+  if (!verifyWebhookSignature(WEBHOOK_SECRET, signature, timestamp, body)) {
+    return res.status(401).json({ error: 'Invalid signature' });
+  }
+
+  const payload = req.body;
+
+  if (payload.event_type === 'user.verified') {
+    // Provision the user in your application
+    console.log('User verified:', payload.email, 'Role:', payload.aegis_role);
+  }
+
+  res.status(200).json({ received: true });
+});
+```
+
+**Verification example (Python/Flask):**
+
+```python
+import hashlib
+import hmac
+
+def verify_webhook_signature(
+    secret: str, signature: str, timestamp: str, body: str
+) -> bool:
+    expected = hmac.new(
+        secret.encode(), f"{timestamp}.{body}".encode(), hashlib.sha256
+    ).hexdigest()
+    return hmac.compare_digest(f"sha256={expected}", signature)
+```
+
+### Secret Management
+
+```typescript
+// Regenerate the webhook secret (invalidates the old one)
+await adminAuth.updateSite(1, { regenerate_webhook_secret: true });
+
+// Remove the webhook entirely
+await adminAuth.updateSite(1, { webhook_url: null });
+```
+
+### Delivery Details
+
+- Webhooks are delivered asynchronously on background threads (non-blocking)
+- Timeout: 5 seconds per delivery attempt
+- A 2xx response is considered successful
+- All delivery attempts are logged for audit and debugging
 
 ## Migration Guide
 
@@ -667,6 +827,8 @@ This package is written in TypeScript and includes full type definitions. All ty
 import type {
   User,
   Site,
+  CreateSiteRequest,
+  UpdateSiteRequest,
   AuthToken,
   RefreshToken,
   LoginResponse,
