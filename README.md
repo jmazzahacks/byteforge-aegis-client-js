@@ -498,10 +498,6 @@ await adminAuth.updateSite(1, { webhook_url: null });
 - A 2xx response is considered successful
 - All delivery attempts are logged for audit and debugging
 
-## Migration Guide
-
-If upgrading from v1.x, see [MIGRATION.md](./MIGRATION.md) for breaking changes and migration steps.
-
 ## Tenant Site Implementation
 
 Verification and password reset emails link directly to your tenant site (using the site's `frontend_url`). Your site needs to implement these pages using the AuthClient.
