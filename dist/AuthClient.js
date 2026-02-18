@@ -398,6 +398,17 @@ class AuthClient {
         });
     }
     /**
+     * List all users for a specific site (requires master API key)
+     */
+    async listUsersBySite(siteId) {
+        if (!this.masterApiKey) {
+            throw new Error('Master API key required for listing site users');
+        }
+        return this.request(`/api/sites/${siteId}/users`, {
+            method: 'GET',
+        });
+    }
+    /**
      * Update a site (requires master API key)
      */
     async updateSite(siteId, updates) {

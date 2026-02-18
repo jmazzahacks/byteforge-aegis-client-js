@@ -142,6 +142,10 @@ export declare class AuthClient {
      */
     listSites(): Promise<ApiResponse<Site[]>>;
     /**
+     * List all users for a specific site (requires master API key)
+     */
+    listUsersBySite(siteId: number): Promise<ApiResponse<User[]>>;
+    /**
      * Update a site (requires master API key)
      */
     updateSite(siteId: number, updates: UpdateSiteRequest): Promise<ApiResponse<Site>>;
