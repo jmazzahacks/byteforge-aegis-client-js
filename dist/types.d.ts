@@ -48,6 +48,8 @@ export interface Site {
     created_at: number;
     updated_at: number;
     allow_self_registration: boolean;
+    webhook_url?: string;
+    webhook_secret?: string;
 }
 export interface CreateSiteRequest {
     name: string;
@@ -57,6 +59,7 @@ export interface CreateSiteRequest {
     email_from: string;
     email_from_name: string;
     allow_self_registration?: boolean;
+    webhook_url?: string;
 }
 export interface UpdateSiteRequest {
     name?: string;
@@ -66,6 +69,8 @@ export interface UpdateSiteRequest {
     email_from?: string;
     email_from_name?: string;
     allow_self_registration?: boolean;
+    webhook_url?: string | null;
+    regenerate_webhook_secret?: boolean;
 }
 export interface RegisterRequest {
     site_id: number;
