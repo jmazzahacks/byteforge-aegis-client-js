@@ -1,8 +1,8 @@
 # Dependencies
 node_modules/
 
-# Build output (included for GitHub-based npm installs)
-# dist/
+# Build output (npm prepare script handles git-based installs)
+dist/
 
 # Logs
 *.log
