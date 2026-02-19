@@ -5,4 +5,5 @@
  */
 
 export { AuthClient } from './AuthClient';
+export { verifyWebhookSignature } from './webhooks';
 export * from './types';

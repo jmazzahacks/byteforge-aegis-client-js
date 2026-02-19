@@ -423,27 +423,10 @@ Every webhook includes an HMAC-SHA256 signature so your application can verify t
 | `X-Aegis-Event` | Event type (e.g., `user.verified`) |
 | `X-Aegis-Timestamp` | Unix timestamp of the event |
 
-**Verification example (Node.js/Express):**
+This library exports a `verifyWebhookSignature` helper that handles HMAC computation, constant-time comparison, and timestamp freshness checking:
 
 ```typescript
-import crypto from 'crypto';
-
-function verifyWebhookSignature(
-  secret: string,
-  signature: string,
-  timestamp: string,
-  body: string
-): boolean {
-  const expected = crypto
-    .createHmac('sha256', secret)
-    .update(`${timestamp}.${body}`)
-    .digest('hex');
-
-  return crypto.timingSafeEqual(
-    Buffer.from(`sha256=${expected}`),
-    Buffer.from(signature)
-  );
-}
+import { verifyWebhookSignature } from 'byteforge-aegis-client-js';
 
 // Express route handler
 app.post('/api/webhooks/aegis', (req, res) => {
@@ -466,20 +449,17 @@ app.post('/api/webhooks/aegis', (req, res) => {
 });
 ```
 
-**Verification example (Python/Flask):**
+**Parameters:**
 
-```python
-import hashlib
-import hmac
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `secret` | `string` | The webhook secret for this site |
+| `signatureHeader` | `string` | Value of the `X-Aegis-Signature` header |
+| `timestamp` | `string` | Value of the `X-Aegis-Timestamp` header |
+| `body` | `string` | Raw request body string |
+| `toleranceSeconds` | `number` | Max age in seconds (default 300, set to 0 to disable) |
 
-def verify_webhook_signature(
-    secret: str, signature: str, timestamp: str, body: str
-) -> bool:
-    expected = hmac.new(
-        secret.encode(), f"{timestamp}.{body}".encode(), hashlib.sha256
-    ).hexdigest()
-    return hmac.compare_digest(f"sha256={expected}", signature)
-```
+A `WebhookHeaders` type is also exported for convenience when typing request headers.
 
 ### Secret Management
 
