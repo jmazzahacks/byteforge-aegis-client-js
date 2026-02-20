@@ -22,6 +22,7 @@ import type {
   RequestEmailChangeRequest,
   ConfirmEmailChangeRequest,
   AdminRegisterRequest,
+  TenantAdminRegisterRequest,
   ApiResponse,
 } from './types';
 
@@ -424,6 +425,28 @@ export class AuthClient {
 
     return this.request<User[]>('/api/admin/users', {
       method: 'GET',
+    });
+  }
+
+  /**
+   * Register a new user for the authenticated admin's site.
+   * Requires authentication as an admin user (Bearer token with admin role).
+   * The site_id is derived from the admin's own user record on the backend.
+   * User will set their own password via email verification link.
+   */
+  async adminRegisterUser(email: string, role?: UserRole): Promise<ApiResponse<User>> {
+    if (!this.authToken) {
+      throw new Error('Authentication required for admin user registration');
+    }
+
+    const body: TenantAdminRegisterRequest = { email };
+    if (role) {
+      body.role = role;
+    }
+
+    return this.request<User>('/api/admin/register-user', {
+      method: 'POST',
+      body: JSON.stringify(body),
     });
   }
 

@@ -183,6 +183,11 @@ export interface AdminRegisterRequest {
   role?: UserRole;
 }
 
+export interface TenantAdminRegisterRequest {
+  email: string;
+  role?: UserRole;
+}
+
 // ============================================================================
 // Webhook Types
 // ============================================================================
