@@ -152,6 +152,23 @@ export class AuthClient {
         headers,
       });
 
+      // Guard against non-JSON responses (e.g. nginx HTML error pages)
+      const contentType = response.headers.get('content-type') || '';
+      if (!contentType.includes('application/json')) {
+        // Handle 401 before returning error for non-JSON responses
+        if (response.status === 401 && !skipAutoRefresh && this.refreshToken) {
+          const refreshResult = await this.refreshAuthToken();
+          if (refreshResult.success) {
+            return this.request<T>(endpoint, options, true);
+          }
+        }
+        return {
+          success: false,
+          error: `Service returned non-JSON response (${response.status})`,
+          statusCode: response.status,
+        };
+      }
+
       const data = await response.json() as any;
 
       // Handle 401 with automatic refresh retry
