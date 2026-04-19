@@ -560,4 +560,17 @@ export class AuthClient {
       body: JSON.stringify(updates),
     });
   }
+
+  /**
+   * Resend verification email for an unverified user (requires master API key)
+   */
+  async resendVerification(userId: number): Promise<ApiResponse<{ message: string }>> {
+    if (!this.masterApiKey) {
+      throw new Error('Master API key required for resending verification');
+    }
+
+    return this.request<{ message: string }>(`/api/admin/resend-verification/${userId}`, {
+      method: 'POST',
+    });
+  }
 }
