@@ -353,6 +353,20 @@ export class AuthClient {
   }
 
   /**
+   * Return the user associated with the current bearer token.
+   * Useful for downstream services that need to resolve a token → user.
+   */
+  async me(): Promise<ApiResponse<User>> {
+    if (!this.authToken) {
+      throw new Error('Authentication required for me()');
+    }
+
+    return this.request<User>('/api/auth/me', {
+      method: 'GET',
+    });
+  }
+
+  /**
    * Change password (requires authentication)
    */
   async changePassword(oldPassword: string, newPassword: string): Promise<ApiResponse<User>> {
