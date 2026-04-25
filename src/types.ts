@@ -75,6 +75,8 @@ export interface Site {
   webhook_url?: string;
   webhook_secret?: string;
   tenant_api_key?: string;
+  mailgun_domain?: string;
+  mailgun_api_key?: string;
 }
 
 export interface CreateSiteRequest {
@@ -86,6 +88,8 @@ export interface CreateSiteRequest {
   email_from_name: string;
   allow_self_registration?: boolean;
   webhook_url?: string;
+  mailgun_domain?: string;
+  mailgun_api_key?: string;
 }
 
 export interface UpdateSiteRequest {
@@ -99,6 +103,8 @@ export interface UpdateSiteRequest {
   webhook_url?: string | null;
   regenerate_webhook_secret?: boolean;
   regenerate_tenant_api_key?: boolean;
+  mailgun_domain?: string | null;
+  mailgun_api_key?: string | null;
 }
 
 // ============================================================================
