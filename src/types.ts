@@ -13,6 +13,13 @@ export interface AuthClientConfig {
   siteId?: number;
   /** Master API key for administrative operations (site management, admin user creation) */
   masterApiKey?: string;
+  /**
+   * Per-tenant secret sent as X-Tenant-Api-Key on public auth endpoints
+   * (register, login, verify-email, request-password-reset, reset-password,
+   * check-verification-token). Must live on the tenant's backend; never ship
+   * in browser-shipped code.
+   */
+  tenantApiKey?: string;
   /** Enable automatic token refresh (default: true) */
   autoRefresh?: boolean;
   /** Seconds before expiration to trigger proactive refresh (default: 300 = 5 minutes) */
@@ -60,7 +67,6 @@ export interface Site {
   domain: string;
   frontend_url: string;
   verification_redirect_url?: string;
-  api_key: string;
   email_from: string;
   email_from_name: string;
   created_at: number;
@@ -68,6 +74,7 @@ export interface Site {
   allow_self_registration: boolean;
   webhook_url?: string;
   webhook_secret?: string;
+  tenant_api_key?: string;
 }
 
 export interface CreateSiteRequest {
@@ -91,6 +98,7 @@ export interface UpdateSiteRequest {
   allow_self_registration?: boolean;
   webhook_url?: string | null;
   regenerate_webhook_secret?: boolean;
+  regenerate_tenant_api_key?: boolean;
 }
 
 // ============================================================================
@@ -132,6 +140,7 @@ export interface LogoutRequest {
 }
 
 export interface VerifyEmailRequest {
+  site_id: number;
   token: string;
   password?: string;
 }
@@ -142,6 +151,7 @@ export interface VerifyEmailResponse {
 }
 
 export interface CheckVerificationTokenRequest {
+  site_id: number;
   token: string;
 }
 
@@ -161,6 +171,7 @@ export interface RequestPasswordResetRequest {
 }
 
 export interface ResetPasswordRequest {
+  site_id: number;
   token: string;
   new_password: string;
 }

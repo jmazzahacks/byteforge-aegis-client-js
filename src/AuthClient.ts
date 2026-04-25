@@ -30,6 +30,7 @@ export class AuthClient {
   private apiUrl: string;
   private siteId?: number;
   private masterApiKey?: string;
+  private tenantApiKey?: string;
   private authToken?: string;
   private refreshToken?: string;
   private authTokenExpiresAt?: number;
@@ -40,6 +41,7 @@ export class AuthClient {
     this.apiUrl = config.apiUrl.replace(/\/$/, ''); // Remove trailing slash
     this.siteId = config.siteId;
     this.masterApiKey = config.masterApiKey;
+    this.tenantApiKey = config.tenantApiKey;
     this.autoRefresh = config.autoRefresh ?? true;
     this.refreshBuffer = config.refreshBuffer ?? 300; // 5 minutes default
   }
@@ -144,6 +146,11 @@ export class AuthClient {
     // Add master API key if available (for admin operations)
     if (this.masterApiKey) {
       headers['X-API-Key'] = this.masterApiKey;
+    }
+
+    // Add tenant API key if available (for public auth endpoints)
+    if (this.tenantApiKey) {
+      headers['X-Tenant-Api-Key'] = this.tenantApiKey;
     }
 
     try {
@@ -330,9 +337,13 @@ export class AuthClient {
    * Used to determine if password form should be shown.
    */
   async checkVerificationToken(token: string): Promise<ApiResponse<CheckVerificationTokenResponse>> {
+    const body: { token: string; site_id?: number } = { token };
+    if (this.siteId) {
+      body.site_id = this.siteId;
+    }
     return this.request<CheckVerificationTokenResponse>('/api/auth/check-verification-token', {
       method: 'POST',
-      body: JSON.stringify({ token }),
+      body: JSON.stringify(body),
     });
   }
 
@@ -340,9 +351,15 @@ export class AuthClient {
    * Verify email address with token.
    * For admin-created users, password is required.
    * For self-registered users, password is optional/ignored.
+   *
+   * site_id is auto-included from config when set; otherwise the caller (typically
+   * a tenant proxy route) is expected to add it before forwarding to Aegis.
    */
   async verifyEmail(token: string, password?: string): Promise<ApiResponse<VerifyEmailResponse>> {
-    const body: VerifyEmailRequest = { token };
+    const body: { token: string; site_id?: number; password?: string } = { token };
+    if (this.siteId) {
+      body.site_id = this.siteId;
+    }
     if (password) {
       body.password = password;
     }
@@ -402,15 +419,22 @@ export class AuthClient {
   }
 
   /**
-   * Reset password with token
+   * Reset password with token.
+   *
+   * site_id is auto-included from config when set; otherwise the caller (typically
+   * a tenant proxy route) is expected to add it before forwarding to Aegis.
    */
   async resetPassword(token: string, newPassword: string): Promise<ApiResponse<User>> {
+    const body: { token: string; new_password: string; site_id?: number } = {
+      token,
+      new_password: newPassword,
+    };
+    if (this.siteId) {
+      body.site_id = this.siteId;
+    }
     return this.request<User>('/api/auth/reset-password', {
       method: 'POST',
-      body: JSON.stringify({
-        token,
-        new_password: newPassword,
-      } as ResetPasswordRequest),
+      body: JSON.stringify(body),
     });
   }
 
