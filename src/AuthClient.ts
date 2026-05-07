@@ -384,6 +384,26 @@ export class AuthClient {
   }
 
   /**
+   * Get a single user by ID — server-to-server lookup gated by the tenant
+   * API key. Use from a backend (Node.js / Next.js API route) that has a
+   * user_id but no Aegis bearer to fetch the user record (notably `role`)
+   * for authorization checks.
+   *
+   * Requires `tenantApiKey` to be set in AuthClientConfig. siteId falls
+   * back to config.siteId when omitted.
+   */
+  async getUser(userId: number, siteId?: number): Promise<ApiResponse<User>> {
+    const site = siteId || this.siteId;
+    if (!site) {
+      throw new Error('siteId is required for getUser');
+    }
+
+    return this.request<User>(`/api/sites/${site}/users/${userId}`, {
+      method: 'GET',
+    });
+  }
+
+  /**
    * Change password (requires authentication)
    */
   async changePassword(oldPassword: string, newPassword: string): Promise<ApiResponse<User>> {

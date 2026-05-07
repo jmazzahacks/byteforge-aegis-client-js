@@ -201,6 +201,41 @@ Confirm email change with the token from the confirmation email.
 const result = await auth.confirmEmailChange('change-token-from-email');
 ```
 
+### Server-to-Server Identity Resolution
+
+For backend services that need to resolve an Aegis identity to a user record (notably to read `role` for authorization).
+
+#### `me()`
+Return the user associated with the current bearer token. Use when the backend received an `Authorization: Bearer <aegis_token>` from a caller and needs to know who that token represents.
+
+```typescript
+const client = new AuthClient({ apiUrl: AEGIS_API_URL, autoRefresh: false });
+client.setAuthToken(incomingBearerToken);
+const result = await client.me();
+if (result.success) {
+  console.log(result.data); // { id, site_id, email, role, ... }
+}
+```
+
+#### `getUser(userId, siteId?)`
+Tenant-key-gated user lookup by id. Use when the backend has a `user_id` (e.g., from a stored API key) but no Aegis bearer is present, and needs the user's current `role`. Requires `tenantApiKey` set in `AuthClientConfig`. `siteId` falls back to `config.siteId` when omitted.
+
+```typescript
+const client = new AuthClient({
+  apiUrl: AEGIS_API_URL,
+  siteId: AEGIS_SITE_ID,
+  tenantApiKey: AEGIS_TENANT_API_KEY,
+  autoRefresh: false,
+});
+
+const result = await client.getUser(42);
+if (result.success && result.data.role === 'admin') {
+  // ...allow admin action
+}
+```
+
+A 401 response means the lookup failed for *some* reason (missing/wrong tenant key, unknown user, or the user belongs to a different site than the configured `siteId`). The response is uniform across all failure modes — treat it as "this user is unknown to me," not as a hint about which specific failure occurred.
+
 ### Admin User Methods
 
 These methods require authentication as an admin user (Bearer token with admin role).
