@@ -4,6 +4,7 @@
 
 import type {
   AuthClientConfig,
+  Identifier,
   User,
   UserRole,
   Site,
@@ -28,7 +29,7 @@ import type {
 
 export class AuthClient {
   private apiUrl: string;
-  private siteId?: number;
+  private siteId?: Identifier;
   private masterApiKey?: string;
   private tenantApiKey?: string;
   private authToken?: string;
@@ -270,7 +271,7 @@ export class AuthClient {
    * If password is provided, user can login after email verification.
    * If password is omitted, user will set their password during email verification.
    */
-  async register(email: string, password?: string, siteId?: number): Promise<ApiResponse<User>> {
+  async register(email: string, password?: string, siteId?: Identifier): Promise<ApiResponse<User>> {
     const site = siteId || this.siteId;
     if (!site) {
       throw new Error('siteId is required for registration');
@@ -290,7 +291,7 @@ export class AuthClient {
   /**
    * Login a user
    */
-  async login(email: string, password: string, siteId?: number): Promise<ApiResponse<LoginResponse>> {
+  async login(email: string, password: string, siteId?: Identifier): Promise<ApiResponse<LoginResponse>> {
     const site = siteId || this.siteId;
     if (!site) {
       throw new Error('siteId is required for login');
@@ -337,7 +338,7 @@ export class AuthClient {
    * Used to determine if password form should be shown.
    */
   async checkVerificationToken(token: string): Promise<ApiResponse<CheckVerificationTokenResponse>> {
-    const body: { token: string; site_id?: number } = { token };
+    const body: { token: string; site_id?: Identifier } = { token };
     if (this.siteId) {
       body.site_id = this.siteId;
     }
@@ -356,7 +357,7 @@ export class AuthClient {
    * a tenant proxy route) is expected to add it before forwarding to Aegis.
    */
   async verifyEmail(token: string, password?: string): Promise<ApiResponse<VerifyEmailResponse>> {
-    const body: { token: string; site_id?: number; password?: string } = { token };
+    const body: { token: string; site_id?: Identifier; password?: string } = { token };
     if (this.siteId) {
       body.site_id = this.siteId;
     }
@@ -392,7 +393,7 @@ export class AuthClient {
    * Requires `tenantApiKey` to be set in AuthClientConfig. siteId falls
    * back to config.siteId when omitted.
    */
-  async getUser(userId: number, siteId?: number): Promise<ApiResponse<User>> {
+  async getUser(userId: Identifier, siteId?: Identifier): Promise<ApiResponse<User>> {
     const site = siteId || this.siteId;
     if (!site) {
       throw new Error('siteId is required for getUser');
@@ -423,7 +424,7 @@ export class AuthClient {
   /**
    * Request password reset email
    */
-  async requestPasswordReset(email: string, siteId?: number): Promise<ApiResponse<{ message: string }>> {
+  async requestPasswordReset(email: string, siteId?: Identifier): Promise<ApiResponse<{ message: string }>> {
     const site = siteId || this.siteId;
     if (!site) {
       throw new Error('siteId is required for password reset');
@@ -445,7 +446,7 @@ export class AuthClient {
    * a tenant proxy route) is expected to add it before forwarding to Aegis.
    */
   async resetPassword(token: string, newPassword: string): Promise<ApiResponse<User>> {
-    const body: { token: string; new_password: string; site_id?: number } = {
+    const body: { token: string; new_password: string; site_id?: Identifier } = {
       token,
       new_password: newPassword,
     };
@@ -533,7 +534,7 @@ export class AuthClient {
    * Register a user via admin (requires master API key).
    * User will set their own password via email verification link.
    */
-  async registerAdmin(email: string, siteId: number, role?: UserRole): Promise<ApiResponse<User>> {
+  async registerAdmin(email: string, siteId: Identifier, role?: UserRole): Promise<ApiResponse<User>> {
     if (!this.masterApiKey) {
       throw new Error('Master API key required for admin registration');
     }
@@ -569,7 +570,7 @@ export class AuthClient {
   /**
    * Get a site by ID (requires master API key)
    */
-  async getSite(siteId: number): Promise<ApiResponse<Site>> {
+  async getSite(siteId: Identifier): Promise<ApiResponse<Site>> {
     if (!this.masterApiKey) {
       throw new Error('Master API key required for site retrieval');
     }
@@ -595,7 +596,7 @@ export class AuthClient {
   /**
    * List all users for a specific site (requires master API key)
    */
-  async listUsersBySite(siteId: number): Promise<ApiResponse<User[]>> {
+  async listUsersBySite(siteId: Identifier): Promise<ApiResponse<User[]>> {
     if (!this.masterApiKey) {
       throw new Error('Master API key required for listing site users');
     }
@@ -608,7 +609,7 @@ export class AuthClient {
   /**
    * Update a site (requires master API key)
    */
-  async updateSite(siteId: number, updates: UpdateSiteRequest): Promise<ApiResponse<Site>> {
+  async updateSite(siteId: Identifier, updates: UpdateSiteRequest): Promise<ApiResponse<Site>> {
     if (!this.masterApiKey) {
       throw new Error('Master API key required for site update');
     }
@@ -622,7 +623,7 @@ export class AuthClient {
   /**
    * Resend verification email for an unverified user (requires master API key)
    */
-  async resendVerification(userId: number): Promise<ApiResponse<{ message: string }>> {
+  async resendVerification(userId: Identifier): Promise<ApiResponse<{ message: string }>> {
     if (!this.masterApiKey) {
       throw new Error('Master API key required for resending verification');
     }

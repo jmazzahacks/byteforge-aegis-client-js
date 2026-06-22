@@ -2,6 +2,12 @@
  * TypeScript types for the multi-tenant authentication API
  */
 
+/**
+ * A site or user may be addressed by its legacy integer id or its UUID string
+ * during the int->UUID migration. The API accepts either form.
+ */
+export type Identifier = number | string;
+
 // ============================================================================
 // Configuration
 // ============================================================================
@@ -9,8 +15,8 @@
 export interface AuthClientConfig {
   /** Base URL of the authentication API (e.g., 'https://auth.example.com') */
   apiUrl: string;
-  /** Site ID for this application (required for user operations) */
-  siteId?: number;
+  /** Site identifier for this application (integer id or UUID; required for user operations) */
+  siteId?: Identifier;
   /** Master API key for administrative operations (site management, admin user creation) */
   masterApiKey?: string;
   /**
@@ -34,7 +40,11 @@ export type UserRole = 'user' | 'admin';
 
 export interface User {
   id: number;
+  /** Globally-unique user identifier (UUIDv7). Source of truth during the int->UUID migration. */
+  uuid?: string;
   site_id: number;
+  /** Globally-unique id of the site this user belongs to. */
+  site_uuid?: string;
   email: string;
   is_verified: boolean;
   role: UserRole;
@@ -63,6 +73,8 @@ export interface RefreshToken {
 
 export interface Site {
   id: number;
+  /** Globally-unique site identifier (UUIDv7). Source of truth during the int->UUID migration. */
+  uuid?: string;
   name: string;
   domain: string;
   frontend_url: string;
@@ -112,7 +124,7 @@ export interface UpdateSiteRequest {
 // ============================================================================
 
 export interface RegisterRequest {
-  site_id: number;
+  site_id: Identifier;
   email: string;
   password?: string;  // Optional - if not provided, user sets via email verification
 }
@@ -122,7 +134,7 @@ export interface RegisterResponse {
 }
 
 export interface LoginRequest {
-  site_id: number;
+  site_id: Identifier;
   email: string;
   password: string;
 }
@@ -146,7 +158,7 @@ export interface LogoutRequest {
 }
 
 export interface VerifyEmailRequest {
-  site_id: number;
+  site_id: Identifier;
   token: string;
   password?: string;
 }
@@ -157,7 +169,7 @@ export interface VerifyEmailResponse {
 }
 
 export interface CheckVerificationTokenRequest {
-  site_id: number;
+  site_id: Identifier;
   token: string;
 }
 
@@ -172,12 +184,12 @@ export interface ChangePasswordRequest {
 }
 
 export interface RequestPasswordResetRequest {
-  site_id: number;
+  site_id: Identifier;
   email: string;
 }
 
 export interface ResetPasswordRequest {
-  site_id: number;
+  site_id: Identifier;
   token: string;
   new_password: string;
 }
@@ -195,7 +207,7 @@ export interface ConfirmEmailChangeRequest {
 // ============================================================================
 
 export interface AdminRegisterRequest {
-  site_id: number;
+  site_id: Identifier;
   email: string;
   role?: UserRole;
 }
