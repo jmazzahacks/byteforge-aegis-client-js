@@ -621,6 +621,22 @@ export class AuthClient {
   }
 
   /**
+   * Delete a site and ALL of its data (requires master API key).
+   *
+   * This is irreversible: every user, token, and record belonging to the
+   * site is permanently removed.
+   */
+  async deleteSite(siteId: Identifier): Promise<ApiResponse<{ message: string }>> {
+    if (!this.masterApiKey) {
+      throw new Error('Master API key required for site deletion');
+    }
+
+    return this.request<{ message: string }>(`/api/sites/${siteId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  /**
    * Resend verification email for an unverified user (requires master API key)
    */
   async resendVerification(userId: Identifier): Promise<ApiResponse<{ message: string }>> {
