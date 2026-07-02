@@ -648,4 +648,20 @@ export class AuthClient {
       method: 'POST',
     });
   }
+
+  /**
+   * Delete a user and all of their associated data (requires master API key).
+   *
+   * This is irreversible: the user and every token/record belonging to them
+   * is permanently removed.
+   */
+  async deleteUser(userId: Identifier): Promise<ApiResponse<{ message: string }>> {
+    if (!this.masterApiKey) {
+      throw new Error('Master API key required for user deletion');
+    }
+
+    return this.request<{ message: string }>(`/api/admin/users/${userId}`, {
+      method: 'DELETE',
+    });
+  }
 }
