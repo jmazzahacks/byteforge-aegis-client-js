@@ -4,7 +4,6 @@
 
 import type {
   AuthClientConfig,
-  Identifier,
   User,
   UserRole,
   Site,
@@ -29,7 +28,7 @@ import type {
 
 export class AuthClient {
   private apiUrl: string;
-  private siteId?: Identifier;
+  private siteId?: string;
   private masterApiKey?: string;
   private tenantApiKey?: string;
   private authToken?: string;
@@ -271,7 +270,7 @@ export class AuthClient {
    * If password is provided, user can login after email verification.
    * If password is omitted, user will set their password during email verification.
    */
-  async register(email: string, password?: string, siteId?: Identifier): Promise<ApiResponse<User>> {
+  async register(email: string, password?: string, siteId?: string): Promise<ApiResponse<User>> {
     const site = siteId || this.siteId;
     if (!site) {
       throw new Error('siteId is required for registration');
@@ -291,7 +290,7 @@ export class AuthClient {
   /**
    * Login a user
    */
-  async login(email: string, password: string, siteId?: Identifier): Promise<ApiResponse<LoginResponse>> {
+  async login(email: string, password: string, siteId?: string): Promise<ApiResponse<LoginResponse>> {
     const site = siteId || this.siteId;
     if (!site) {
       throw new Error('siteId is required for login');
@@ -338,7 +337,7 @@ export class AuthClient {
    * Used to determine if password form should be shown.
    */
   async checkVerificationToken(token: string): Promise<ApiResponse<CheckVerificationTokenResponse>> {
-    const body: { token: string; site_id?: Identifier } = { token };
+    const body: { token: string; site_id?: string } = { token };
     if (this.siteId) {
       body.site_id = this.siteId;
     }
@@ -357,7 +356,7 @@ export class AuthClient {
    * a tenant proxy route) is expected to add it before forwarding to Aegis.
    */
   async verifyEmail(token: string, password?: string): Promise<ApiResponse<VerifyEmailResponse>> {
-    const body: { token: string; site_id?: Identifier; password?: string } = { token };
+    const body: { token: string; site_id?: string; password?: string } = { token };
     if (this.siteId) {
       body.site_id = this.siteId;
     }
@@ -393,7 +392,7 @@ export class AuthClient {
    * Requires `tenantApiKey` to be set in AuthClientConfig. siteId falls
    * back to config.siteId when omitted.
    */
-  async getUser(userId: Identifier, siteId?: Identifier): Promise<ApiResponse<User>> {
+  async getUser(userId: string, siteId?: string): Promise<ApiResponse<User>> {
     const site = siteId || this.siteId;
     if (!site) {
       throw new Error('siteId is required for getUser');
@@ -424,7 +423,7 @@ export class AuthClient {
   /**
    * Request password reset email
    */
-  async requestPasswordReset(email: string, siteId?: Identifier): Promise<ApiResponse<{ message: string }>> {
+  async requestPasswordReset(email: string, siteId?: string): Promise<ApiResponse<{ message: string }>> {
     const site = siteId || this.siteId;
     if (!site) {
       throw new Error('siteId is required for password reset');
@@ -446,7 +445,7 @@ export class AuthClient {
    * a tenant proxy route) is expected to add it before forwarding to Aegis.
    */
   async resetPassword(token: string, newPassword: string): Promise<ApiResponse<User>> {
-    const body: { token: string; new_password: string; site_id?: Identifier } = {
+    const body: { token: string; new_password: string; site_id?: string } = {
       token,
       new_password: newPassword,
     };
@@ -534,7 +533,7 @@ export class AuthClient {
    * Register a user via admin (requires master API key).
    * User will set their own password via email verification link.
    */
-  async registerAdmin(email: string, siteId: Identifier, role?: UserRole): Promise<ApiResponse<User>> {
+  async registerAdmin(email: string, siteId: string, role?: UserRole): Promise<ApiResponse<User>> {
     if (!this.masterApiKey) {
       throw new Error('Master API key required for admin registration');
     }
@@ -570,7 +569,7 @@ export class AuthClient {
   /**
    * Get a site by ID (requires master API key)
    */
-  async getSite(siteId: Identifier): Promise<ApiResponse<Site>> {
+  async getSite(siteId: string): Promise<ApiResponse<Site>> {
     if (!this.masterApiKey) {
       throw new Error('Master API key required for site retrieval');
     }
@@ -596,7 +595,7 @@ export class AuthClient {
   /**
    * List all users for a specific site (requires master API key)
    */
-  async listUsersBySite(siteId: Identifier): Promise<ApiResponse<User[]>> {
+  async listUsersBySite(siteId: string): Promise<ApiResponse<User[]>> {
     if (!this.masterApiKey) {
       throw new Error('Master API key required for listing site users');
     }
@@ -609,7 +608,7 @@ export class AuthClient {
   /**
    * Update a site (requires master API key)
    */
-  async updateSite(siteId: Identifier, updates: UpdateSiteRequest): Promise<ApiResponse<Site>> {
+  async updateSite(siteId: string, updates: UpdateSiteRequest): Promise<ApiResponse<Site>> {
     if (!this.masterApiKey) {
       throw new Error('Master API key required for site update');
     }
@@ -626,7 +625,7 @@ export class AuthClient {
    * This is irreversible: every user, token, and record belonging to the
    * site is permanently removed.
    */
-  async deleteSite(siteId: Identifier): Promise<ApiResponse<{ message: string }>> {
+  async deleteSite(siteId: string): Promise<ApiResponse<{ message: string }>> {
     if (!this.masterApiKey) {
       throw new Error('Master API key required for site deletion');
     }
@@ -639,7 +638,7 @@ export class AuthClient {
   /**
    * Resend verification email for an unverified user (requires master API key)
    */
-  async resendVerification(userId: Identifier): Promise<ApiResponse<{ message: string }>> {
+  async resendVerification(userId: string): Promise<ApiResponse<{ message: string }>> {
     if (!this.masterApiKey) {
       throw new Error('Master API key required for resending verification');
     }
@@ -655,7 +654,7 @@ export class AuthClient {
    * This is irreversible: the user and every token/record belonging to them
    * is permanently removed.
    */
-  async deleteUser(userId: Identifier): Promise<ApiResponse<{ message: string }>> {
+  async deleteUser(userId: string): Promise<ApiResponse<{ message: string }>> {
     if (!this.masterApiKey) {
       throw new Error('Master API key required for user deletion');
     }

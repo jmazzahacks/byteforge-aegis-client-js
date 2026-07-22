@@ -24,7 +24,7 @@ import { AuthClient } from 'byteforge-aegis-client-js';
 // Initialize the client
 const auth = new AuthClient({
   apiUrl: 'http://localhost:5678',
-  siteId: 1, // Your site ID
+  siteId: '0191e1a0-5e2f-7c3a-9d4b-1f2e3a4b5c6d', // Your site UUID
 });
 
 // Register a new user
@@ -52,7 +52,7 @@ await auth.logout();
 ```typescript
 interface AuthClientConfig {
   apiUrl: string;         // Base URL of the auth API
-  siteId?: number;        // Default site ID for user operations
+  siteId?: string;        // Default site UUID for user operations
   masterApiKey?: string;  // Master API key for admin operations
   autoRefresh?: boolean;  // Enable automatic token refresh (default: true)
   refreshBuffer?: number; // Seconds before expiration to refresh (default: 300)
@@ -65,7 +65,7 @@ interface AuthClientConfig {
 ```typescript
 const auth = new AuthClient({
   apiUrl: 'https://auth.example.com',
-  siteId: 1,
+  siteId: '0191e1a0-5e2f-7c3a-9d4b-1f2e3a4b5c6d',
 });
 ```
 
@@ -213,12 +213,12 @@ const client = new AuthClient({ apiUrl: AEGIS_API_URL, autoRefresh: false });
 client.setAuthToken(incomingBearerToken);
 const result = await client.me();
 if (result.success) {
-  console.log(result.data); // { id, site_id, email, role, ... }
+  console.log(result.data); // { uuid, site_uuid, email, role, ... }
 }
 ```
 
 #### `getUser(userId, siteId?)`
-Tenant-key-gated user lookup by id. Use when the backend has a `user_id` (e.g., from a stored API key) but no Aegis bearer is present, and needs the user's current `role`. Requires `tenantApiKey` set in `AuthClientConfig`. `siteId` falls back to `config.siteId` when omitted.
+Tenant-key-gated user lookup by UUID. Use when the backend has a stored user UUID (e.g., from an API key record) but no Aegis bearer is present, and needs the user's current `role`. Requires `tenantApiKey` set in `AuthClientConfig`. `siteId` falls back to `config.siteId` when omitted.
 
 ```typescript
 const client = new AuthClient({
@@ -228,7 +228,7 @@ const client = new AuthClient({
   autoRefresh: false,
 });
 
-const result = await client.getUser(42);
+const result = await client.getUser('0191e1a0-6f3b-7d4c-8e5f-2a3b4c5d6e7f');
 if (result.success && result.data.role === 'admin') {
   // ...allow admin action
 }
@@ -251,7 +251,7 @@ await auth.login('admin@example.com', 'password123');
 const result = await auth.adminListUsers();
 if (result.success) {
   console.log('Users:', result.data);
-  // [{ id: 1, email: 'user@example.com', role: 'user', is_verified: true, ... }]
+  // [{ uuid: '0191e1a0-...', site_uuid: '0191e1a0-...', email: 'user@example.com', role: 'user', is_verified: true, ... }]
 }
 ```
 
@@ -289,7 +289,7 @@ const result = await adminAuth.createSite({
 Get site details by ID.
 
 ```typescript
-const result = await adminAuth.getSite(1);
+const result = await adminAuth.getSite('0191e1a0-5e2f-7c3a-9d4b-1f2e3a4b5c6d');
 ```
 
 #### `listSites()`
@@ -306,10 +306,10 @@ if (result.success) {
 List all users for a specific site.
 
 ```typescript
-const result = await adminAuth.listUsersBySite(1);
+const result = await adminAuth.listUsersBySite('0191e1a0-5e2f-7c3a-9d4b-1f2e3a4b5c6d');
 if (result.success) {
   console.log('Users:', result.data);
-  // [{ id: 1, email: 'user@example.com', role: 'user', is_verified: true, ... }]
+  // [{ uuid: '0191e1a0-...', site_uuid: '0191e1a0-...', email: 'user@example.com', role: 'user', is_verified: true, ... }]
 }
 ```
 
@@ -317,28 +317,28 @@ if (result.success) {
 Update site configuration.
 
 ```typescript
-const result = await adminAuth.updateSite(1, {
+const result = await adminAuth.updateSite('0191e1a0-5e2f-7c3a-9d4b-1f2e3a4b5c6d', {
   name: 'Updated Site Name',
   frontend_url: 'https://new-url.com',
 });
 
 // Disable self-registration for a site
-const result = await adminAuth.updateSite(1, {
+const result = await adminAuth.updateSite('0191e1a0-5e2f-7c3a-9d4b-1f2e3a4b5c6d', {
   allow_self_registration: false,
 });
 
 // Configure a webhook URL (a secret is auto-generated)
-const result = await adminAuth.updateSite(1, {
+const result = await adminAuth.updateSite('0191e1a0-5e2f-7c3a-9d4b-1f2e3a4b5c6d', {
   webhook_url: 'https://mysite.com/api/webhooks/aegis',
 });
 
 // Regenerate the webhook secret
-const result = await adminAuth.updateSite(1, {
+const result = await adminAuth.updateSite('0191e1a0-5e2f-7c3a-9d4b-1f2e3a4b5c6d', {
   regenerate_webhook_secret: true,
 });
 
 // Remove the webhook
-const result = await adminAuth.updateSite(1, {
+const result = await adminAuth.updateSite('0191e1a0-5e2f-7c3a-9d4b-1f2e3a4b5c6d', {
   webhook_url: null,
 });
 ```
@@ -375,7 +375,7 @@ To disable auto-refresh:
 ```typescript
 const auth = new AuthClient({
   apiUrl: 'https://auth.example.com',
-  siteId: 1,
+  siteId: '0191e1a0-5e2f-7c3a-9d4b-1f2e3a4b5c6d',
   autoRefresh: false,
 });
 ```
@@ -436,8 +436,8 @@ Each webhook POST includes a JSON body with the following structure:
 ```json
 {
   "event_type": "user.verified",
-  "site_id": 1,
-  "user_id": 42,
+  "site_uuid": "0191e1a0-5e2f-7c3a-9d4b-1f2e3a4b5c6d",
+  "user_uuid": "0191e1a0-6f3b-7d4c-8e5f-2a3b4c5d6e7f",
   "email": "user@example.com",
   "aegis_role": "user",
   "timestamp": 1708300000
@@ -500,10 +500,10 @@ A `WebhookHeaders` type is also exported for convenience when typing request hea
 
 ```typescript
 // Regenerate the webhook secret (invalidates the old one)
-await adminAuth.updateSite(1, { regenerate_webhook_secret: true });
+await adminAuth.updateSite('0191e1a0-5e2f-7c3a-9d4b-1f2e3a4b5c6d', { regenerate_webhook_secret: true });
 
 // Remove the webhook entirely
-await adminAuth.updateSite(1, { webhook_url: null });
+await adminAuth.updateSite('0191e1a0-5e2f-7c3a-9d4b-1f2e3a4b5c6d', { webhook_url: null });
 ```
 
 ### Delivery Details

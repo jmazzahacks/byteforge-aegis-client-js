@@ -2,12 +2,6 @@
  * TypeScript types for the multi-tenant authentication API
  */
 
-/**
- * A site or user may be addressed by its legacy integer id or its UUID string
- * during the int->UUID migration. The API accepts either form.
- */
-export type Identifier = number | string;
-
 // ============================================================================
 // Configuration
 // ============================================================================
@@ -15,8 +9,8 @@ export type Identifier = number | string;
 export interface AuthClientConfig {
   /** Base URL of the authentication API (e.g., 'https://auth.example.com') */
   apiUrl: string;
-  /** Site identifier for this application (integer id or UUID; required for user operations) */
-  siteId?: Identifier;
+  /** Site UUID for this application (required for user operations) */
+  siteId?: string;
   /** Master API key for administrative operations (site management, admin user creation) */
   masterApiKey?: string;
   /**
@@ -39,12 +33,10 @@ export interface AuthClientConfig {
 export type UserRole = 'user' | 'admin';
 
 export interface User {
-  id: number;
-  /** Globally-unique user identifier (UUIDv7). Source of truth during the int->UUID migration. */
-  uuid?: string;
-  site_id: number;
-  /** Globally-unique id of the site this user belongs to. */
-  site_uuid?: string;
+  /** Globally-unique user identifier (UUIDv7) */
+  uuid: string;
+  /** Globally-unique id of the site this user belongs to */
+  site_uuid: string;
   email: string;
   is_verified: boolean;
   role: UserRole;
@@ -54,16 +46,21 @@ export interface User {
 
 export interface AuthToken {
   token: string;
-  user_id: number;
-  site_id: number;
+  /** Globally-unique id of the user this token belongs to */
+  user_uuid: string;
   expires_at: number;
-  created_at: number;
+  /** Omitted in API login/refresh responses */
+  site_uuid?: string;
+  /** Omitted in API login/refresh responses */
+  created_at?: number;
 }
 
 export interface RefreshToken {
   token: string;
-  user_id: number;
-  site_id: number;
+  /** Globally-unique id of the site this token belongs to */
+  site_uuid: string;
+  /** Globally-unique id of the user this token belongs to */
+  user_uuid: string;
   expires_at: number;
 }
 
@@ -72,9 +69,8 @@ export interface RefreshToken {
 // ============================================================================
 
 export interface Site {
-  id: number;
-  /** Globally-unique site identifier (UUIDv7). Source of truth during the int->UUID migration. */
-  uuid?: string;
+  /** Globally-unique site identifier (UUIDv7) */
+  uuid: string;
   name: string;
   domain: string;
   frontend_url: string;
@@ -124,7 +120,7 @@ export interface UpdateSiteRequest {
 // ============================================================================
 
 export interface RegisterRequest {
-  site_id: Identifier;
+  site_id: string;
   email: string;
   password?: string;  // Optional - if not provided, user sets via email verification
 }
@@ -134,7 +130,7 @@ export interface RegisterResponse {
 }
 
 export interface LoginRequest {
-  site_id: Identifier;
+  site_id: string;
   email: string;
   password: string;
 }
@@ -158,7 +154,7 @@ export interface LogoutRequest {
 }
 
 export interface VerifyEmailRequest {
-  site_id: Identifier;
+  site_id: string;
   token: string;
   password?: string;
 }
@@ -169,7 +165,7 @@ export interface VerifyEmailResponse {
 }
 
 export interface CheckVerificationTokenRequest {
-  site_id: Identifier;
+  site_id: string;
   token: string;
 }
 
@@ -184,12 +180,12 @@ export interface ChangePasswordRequest {
 }
 
 export interface RequestPasswordResetRequest {
-  site_id: Identifier;
+  site_id: string;
   email: string;
 }
 
 export interface ResetPasswordRequest {
-  site_id: Identifier;
+  site_id: string;
   token: string;
   new_password: string;
 }
@@ -207,7 +203,7 @@ export interface ConfirmEmailChangeRequest {
 // ============================================================================
 
 export interface AdminRegisterRequest {
-  site_id: Identifier;
+  site_id: string;
   email: string;
   role?: UserRole;
 }
