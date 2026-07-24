@@ -428,10 +428,11 @@ console.log('Webhook secret:', result.data.webhook_secret);
 | Event | Trigger |
 |-------|---------|
 | `user.verified` | User completes email verification (both self-registered and admin-created users) |
+| `user.deleted` | User is deleted from Aegis — use this to clean up any records your application keys on the user's `user_uuid` |
 
 ### Payload
 
-Each webhook POST includes a JSON body with the following structure:
+Each webhook POST includes a JSON body with the following structure. Every event shares the same shape; `event_type` (and the `X-Aegis-Event` header) distinguishes them:
 
 ```json
 {
