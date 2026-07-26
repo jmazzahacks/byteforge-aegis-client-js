@@ -436,6 +436,7 @@ Each webhook POST includes a JSON body with the following structure. Every event
 
 ```json
 {
+  "event_id": "0191e1a0-7a4c-7e5d-9f60-3b4c5d6e7f80",
   "event_type": "user.verified",
   "site_uuid": "0191e1a0-5e2f-7c3a-9d4b-1f2e3a4b5c6d",
   "user_uuid": "0191e1a0-6f3b-7d4c-8e5f-2a3b4c5d6e7f",
@@ -446,6 +447,8 @@ Each webhook POST includes a JSON body with the following structure. Every event
 ```
 
 **Note:** `aegis_role` is the user's role within Aegis (`"user"` or `"admin"`), which is distinct from any roles your tenant application may assign.
+
+**Note:** `event_id` uniquely identifies the event (UUIDv7) and is stable across delivery attempts — use it to deduplicate, and quote it when reporting a delivery problem so it can be matched against the Aegis-side delivery log.
 
 ### Signature Verification
 

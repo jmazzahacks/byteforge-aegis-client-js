@@ -220,6 +220,7 @@ export interface TenantAdminRegisterRequest {
 export type WebhookEventType = 'user.verified' | 'user.deleted';
 
 export interface WebhookPayload {
+  event_id: string;
   event_type: WebhookEventType;
   site_uuid: string;
   user_uuid: string;
