@@ -217,6 +217,17 @@ export interface TenantAdminRegisterRequest {
 // Webhook Types
 // ============================================================================
 
+export type WebhookEventType = 'user.verified' | 'user.deleted';
+
+export interface WebhookPayload {
+  event_type: WebhookEventType;
+  site_uuid: string;
+  user_uuid: string;
+  email: string;
+  aegis_role: UserRole;
+  timestamp: number;
+}
+
 export interface WebhookHeaders {
   'X-Aegis-Signature': string;
   'X-Aegis-Event': string;

@@ -462,7 +462,7 @@ Every webhook includes an HMAC-SHA256 signature so your application can verify t
 This library exports a `verifyWebhookSignature` helper that handles HMAC computation, constant-time comparison, and timestamp freshness checking:
 
 ```typescript
-import { verifyWebhookSignature } from 'byteforge-aegis-client-js';
+import { verifyWebhookSignature, WebhookPayload } from 'byteforge-aegis-client-js';
 
 // Express route handler
 app.post('/api/webhooks/aegis', (req, res) => {
@@ -474,16 +474,21 @@ app.post('/api/webhooks/aegis', (req, res) => {
     return res.status(401).json({ error: 'Invalid signature' });
   }
 
-  const payload = req.body;
+  const payload = req.body as WebhookPayload;
 
   if (payload.event_type === 'user.verified') {
     // Provision the user in your application
     console.log('User verified:', payload.email, 'Role:', payload.aegis_role);
+  } else if (payload.event_type === 'user.deleted') {
+    // Clean up records keyed on the user's uuid
+    console.log('User deleted:', payload.user_uuid);
   }
 
   res.status(200).json({ received: true });
 });
 ```
+
+The library also exports a `WebhookEventType` union (`'user.verified' | 'user.deleted'`) — typing `payload.event_type` against it means TypeScript will exhaustively check your handler branches.
 
 **Parameters:**
 
