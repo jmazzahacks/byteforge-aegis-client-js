@@ -260,4 +260,16 @@ export interface ErrorResponse {
 
 export type ApiResponse<T> =
   | { success: true; data: T }
-  | { success: false; error: string; statusCode: number };
+  | {
+      success: false;
+      error: string;
+      /**
+       * Machine-readable reason, when the API supplies one — e.g.
+       * 'site_deletion_protected', 'user_deletion_protected',
+       * 'last_site_admin'. Present only for errors that carry a `code`;
+       * switch on this rather than matching the human-readable `error`,
+       * which is English-only and may be reworded.
+       */
+      code?: string;
+      statusCode: number;
+    };

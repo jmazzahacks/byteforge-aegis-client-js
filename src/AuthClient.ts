@@ -193,6 +193,7 @@ export class AuthClient {
         return {
           success: false,
           error: data.error || 'Unknown error',
+          code: typeof data.code === 'string' ? data.code : undefined,
           statusCode: response.status,
         };
       }
