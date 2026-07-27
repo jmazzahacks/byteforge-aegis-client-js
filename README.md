@@ -271,7 +271,7 @@ const result = await adminAuth.registerAdmin('admin@example.com', 1, 'admin');
 ```
 
 #### `setUserDeletionProtection(userId, deletionProtected)`
-Set or clear deletion protection on a user. While protected, `deleteUser` fails with HTTP 409 and `code: 'user_deletion_protected'`. Use this for accounts whose downstream records hold real value that would become unattributable if the Aegis identity were removed — the flag is exposed as `deletion_protected` on the user object.
+Set or clear deletion protection on a **single user**. For a tenant where every account needs protecting, set `deletion_protected` on the site instead (see `updateSite` below) — that covers existing and future users without per-account marking, and refuses with `site_deletion_protected`. While protected, `deleteUser` fails with HTTP 409 and `code: 'user_deletion_protected'`. Use this for accounts whose downstream records hold real value that would become unattributable if the Aegis identity were removed — the flag is exposed as `deletion_protected` on the user object.
 
 ```typescript
 await adminAuth.setUserDeletionProtection(userUuid, true);
@@ -341,6 +341,15 @@ const result = await adminAuth.updateSite('0191e1a0-5e2f-7c3a-9d4b-1f2e3a4b5c6d'
 // Configure a webhook URL (a secret is auto-generated)
 const result = await adminAuth.updateSite('0191e1a0-5e2f-7c3a-9d4b-1f2e3a4b5c6d', {
   webhook_url: 'https://mysite.com/api/webhooks/aegis',
+});
+
+// Protect the ENTIRE TENANT from deletion. While set, no user on this site
+// can be deleted (409 `site_deletion_protected`) and the site itself cannot
+// be deleted. Prefer this over per-user protection when every account on the
+// tenant anchors unrecoverable records — it doesn't depend on remembering to
+// mark each user. Only real booleans are accepted; "false" is rejected.
+const result = await adminAuth.updateSite('0191e1a0-5e2f-7c3a-9d4b-1f2e3a4b5c6d', {
+  deletion_protected: true,
 });
 
 // Regenerate the webhook secret

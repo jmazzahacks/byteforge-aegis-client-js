@@ -87,6 +87,8 @@ export interface Site {
   tenant_api_key?: string;
   mailgun_domain?: string;
   mailgun_api_key?: string;
+  /** When true, no user on this site may be deleted, and neither may the site */
+  deletion_protected?: boolean;
 }
 
 export interface CreateSiteRequest {
@@ -115,6 +117,13 @@ export interface UpdateSiteRequest {
   regenerate_tenant_api_key?: boolean;
   mailgun_domain?: string | null;
   mailgun_api_key?: string | null;
+  /**
+   * Tenant-wide deletion protection. While true, no user on this site can be
+   * deleted (409 `site_deletion_protected`) and the site itself cannot be
+   * deleted. Setting it false is permitted by the API but is the dangerous
+   * direction — the admin console refuses to send it.
+   */
+  deletion_protected?: boolean;
 }
 
 // ============================================================================
