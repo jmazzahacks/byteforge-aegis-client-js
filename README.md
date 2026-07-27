@@ -270,6 +270,17 @@ const result = await adminAuth.registerAdmin('user@example.com', 1);
 const result = await adminAuth.registerAdmin('admin@example.com', 1, 'admin');
 ```
 
+#### `setUserDeletionProtection(userId, deletionProtected)`
+Set or clear deletion protection on a user. While protected, `deleteUser` fails with HTTP 409 and `code: 'user_deletion_protected'`. Use this for accounts whose downstream records hold real value that would become unattributable if the Aegis identity were removed — the flag is exposed as `deletion_protected` on the user object.
+
+```typescript
+await adminAuth.setUserDeletionProtection(userUuid, true);
+
+// To delete a protected user, clear the flag first — two deliberate steps.
+await adminAuth.setUserDeletionProtection(userUuid, false);
+await adminAuth.deleteUser(userUuid);
+```
+
 #### `createSite(siteData)`
 Create a new site.
 

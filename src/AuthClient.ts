@@ -652,7 +652,9 @@ export class AuthClient {
    * Delete a user and all of their associated data (requires master API key).
    *
    * This is irreversible: the user and every token/record belonging to them
-   * is permanently removed.
+   * is permanently removed. Fails with 409 when the user is deletion-protected
+   * (code 'user_deletion_protected') or is their site's last admin (code
+   * 'last_site_admin').
    */
   async deleteUser(userId: string): Promise<ApiResponse<{ message: string }>> {
     if (!this.masterApiKey) {
@@ -661,6 +663,29 @@ export class AuthClient {
 
     return this.request<{ message: string }>(`/api/admin/users/${userId}`, {
       method: 'DELETE',
+    });
+  }
+
+  /**
+   * Set or clear deletion protection on a user (requires master API key).
+   *
+   * A protected user cannot be deleted — deleteUser returns 409 with
+   * code 'user_deletion_protected'. Use this for accounts whose downstream
+   * records hold real value that would become unattributable if the Aegis
+   * identity were removed. Clearing the flag is a deliberate, separately
+   * auditable step before deletion.
+   */
+  async setUserDeletionProtection(
+    userId: string,
+    deletionProtected: boolean
+  ): Promise<ApiResponse<User>> {
+    if (!this.masterApiKey) {
+      throw new Error('Master API key required to change deletion protection');
+    }
+
+    return this.request<User>(`/api/admin/users/${userId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ deletion_protected: deletionProtected }),
     });
   }
 }

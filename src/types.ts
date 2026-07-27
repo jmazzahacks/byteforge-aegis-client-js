@@ -42,6 +42,8 @@ export interface User {
   role: UserRole;
   created_at: number;
   updated_at: number;
+  /** When true, admin deletion of this user is refused (409, code 'user_deletion_protected') */
+  deletion_protected: boolean;
 }
 
 export interface AuthToken {
