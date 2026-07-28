@@ -468,6 +468,8 @@ Each webhook POST includes a JSON body with the following structure. Every event
 
 **Note:** `aegis_role` is the user's role within Aegis (`"user"` or `"admin"`), which is distinct from any roles your tenant application may assign.
 
+**Security note:** the HMAC covers `"{timestamp}.{raw_body}"`, so the body's `event_type` is signed but the `X-Aegis-Event` header is not. A captured delivery replayed inside the freshness window with the header rewritten still verifies, so a handler that dispatches on the header can be tricked into acting on a forged event type. Always branch on `payload.event_type` from the parsed body, as the example above does.
+
 **Note:** `event_id` uniquely identifies the event (UUIDv7) and is stable across delivery attempts — use it to deduplicate, and quote it when reporting a delivery problem so it can be matched against the Aegis-side delivery log.
 
 ### Signature Verification
@@ -479,7 +481,7 @@ Every webhook includes an HMAC-SHA256 signature so your application can verify t
 | Header | Description |
 |--------|-------------|
 | `X-Aegis-Signature` | `sha256=<hex-digest>` — HMAC-SHA256 of `{timestamp}.{body}` |
-| `X-Aegis-Event` | Event type (e.g., `user.verified`) |
+| `X-Aegis-Event` | Event type (e.g., `user.verified`) — **not covered by the signature**; branch on the body's `event_type` instead |
 | `X-Aegis-Timestamp` | Unix timestamp of the event |
 
 This library exports a `verifyWebhookSignature` helper that handles HMAC computation, constant-time comparison, and timestamp freshness checking:
