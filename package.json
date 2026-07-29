@@ -1,6 +1,6 @@
 {
   "name": "byteforge-aegis-client-js",
-  "version": "3.6.0",
+  "version": "4.0.0",
   "description": "JavaScript/TypeScript client for ByteForge Aegis multi-tenant authentication service",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

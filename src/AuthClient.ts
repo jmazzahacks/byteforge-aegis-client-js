@@ -460,9 +460,17 @@ export class AuthClient {
   }
 
   /**
-   * Request email change (requires authentication)
+   * Request email change (requires authentication and the current password)
+   *
+   * The password is required as of Aegis backend v61. This endpoint moves
+   * the account's login identifier, so an auth token alone must not be
+   * enough to call it — otherwise a stolen token converts into permanent
+   * ownership of the account.
    */
-  async requestEmailChange(newEmail: string): Promise<ApiResponse<{ message: string; token: string }>> {
+  async requestEmailChange(
+    newEmail: string,
+    password: string,
+  ): Promise<ApiResponse<{ message: string; token: string }>> {
     if (!this.authToken) {
       throw new Error('Authentication required for email change');
     }
@@ -471,6 +479,7 @@ export class AuthClient {
       method: 'POST',
       body: JSON.stringify({
         new_email: newEmail,
+        password,
       } as RequestEmailChangeRequest),
     });
   }

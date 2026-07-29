@@ -203,6 +203,8 @@ export interface ResetPasswordRequest {
 
 export interface RequestEmailChangeRequest {
   new_email: string;
+  /** The caller's current password. Required as of Aegis backend v61. */
+  password: string;
 }
 
 export interface ConfirmEmailChangeRequest {
