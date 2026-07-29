@@ -1,6 +1,6 @@
 {
   "name": "byteforge-aegis-client-js",
-  "version": "3.5.1",
+  "version": "3.6.0",
   "description": "JavaScript/TypeScript client for ByteForge Aegis multi-tenant authentication service",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -8,7 +8,9 @@
     "build": "tsc",
     "prepare": "npm run build",
     "prepublishOnly": "npm run build",
-    "watch": "tsc --watch"
+    "watch": "tsc --watch",
+    "pretest": "npm run build",
+    "test": "node --test test/*.test.mjs"
   },
   "keywords": [
     "byteforge",
@@ -34,6 +36,6 @@
     "typescript": "^5.0.0"
   },
   "engines": {
-    "node": ">=16.0.0"
+    "node": ">=18.0.0"
   }
 }

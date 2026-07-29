@@ -487,30 +487,46 @@ Every webhook includes an HMAC-SHA256 signature so your application can verify t
 This library exports a `verifyWebhookSignature` helper that handles HMAC computation, constant-time comparison, and timestamp freshness checking:
 
 ```typescript
+import express from 'express';
 import { verifyWebhookSignature, WebhookPayload } from 'byteforge-aegis-client-js';
 
-// Express route handler
-app.post('/api/webhooks/aegis', (req, res) => {
-  const signature = req.headers['x-aegis-signature'] as string;
-  const timestamp = req.headers['x-aegis-timestamp'] as string;
-  const body = JSON.stringify(req.body);
+// The signature covers the RAW bytes. express.json() would give you a
+// parsed object, and JSON.stringify()-ing it back is not byte-identical —
+// whitespace and unicode escaping differ — so verification would pass on
+// simple payloads and start failing the moment one contains a non-ASCII
+// character. Capture the raw body instead.
+app.post(
+  '/api/webhooks/aegis',
+  express.raw({ type: 'application/json' }),
+  (req, res) => {
+    const signature = req.headers['x-aegis-signature'] as string;
+    const timestamp = req.headers['x-aegis-timestamp'] as string;
+    const eventType = req.headers['x-aegis-event'] as string;
+    const body = req.body.toString('utf8');
 
-  if (!verifyWebhookSignature(WEBHOOK_SECRET, signature, timestamp, body)) {
-    return res.status(401).json({ error: 'Invalid signature' });
-  }
+    // Pass eventType. The HMAC covers only "{timestamp}.{raw_body}", so the
+    // X-Aegis-Event header is NOT signed — without this argument a captured
+    // delivery can be replayed inside the freshness window with that header
+    // rewritten to any event, and the signature still verifies.
+    if (!verifyWebhookSignature(WEBHOOK_SECRET, signature, timestamp, body, 300, eventType)) {
+      return res.status(401).json({ error: 'Invalid signature' });
+    }
 
-  const payload = req.body as WebhookPayload;
+    // Parse only after verifying, and dispatch on the BODY's event_type —
+    // the header is a routing hint, never the authority.
+    const payload = JSON.parse(body) as WebhookPayload;
 
-  if (payload.event_type === 'user.verified') {
-    // Provision the user in your application
-    console.log('User verified:', payload.email, 'Role:', payload.aegis_role);
-  } else if (payload.event_type === 'user.deleted') {
-    // Clean up records keyed on the user's uuid
-    console.log('User deleted:', payload.user_uuid);
-  }
+    if (payload.event_type === 'user.verified') {
+      // Provision the user in your application
+      console.log('User verified:', payload.email, 'Role:', payload.aegis_role);
+    } else if (payload.event_type === 'user.deleted') {
+      // Clean up records keyed on the user's uuid
+      console.log('User deleted:', payload.user_uuid);
+    }
 
-  res.status(200).json({ received: true });
-});
+    res.status(200).json({ received: true });
+  },
+);
 ```
 
 The library also exports a `WebhookEventType` union (`'user.verified' | 'user.deleted'`) — typing `payload.event_type` against it means TypeScript will exhaustively check your handler branches.
@@ -522,8 +538,9 @@ The library also exports a `WebhookEventType` union (`'user.verified' | 'user.de
 | `secret` | `string` | The webhook secret for this site |
 | `signatureHeader` | `string` | Value of the `X-Aegis-Signature` header |
 | `timestamp` | `string` | Value of the `X-Aegis-Timestamp` header |
-| `body` | `string` | Raw request body string |
-| `toleranceSeconds` | `number` | Max age in seconds (default 300, set to 0 to disable) |
+| `body` | `string` | Raw request body string — the bytes as received, never `JSON.stringify()` of a parsed object |
+| `toleranceSeconds` | `number` | Max age in seconds (default 300). Setting this to 0 disables replay protection entirely and is not recommended |
+| `eventType` | `string?` | Value of the `X-Aegis-Event` header. **Strongly recommended** — when supplied, a delivery whose header disagrees with the signed body is rejected. Omitted, that check is off |
 
 A `WebhookHeaders` type is also exported for convenience when typing request headers.
 
